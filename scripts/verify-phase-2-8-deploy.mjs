@@ -5,13 +5,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const url = process.env.VITE_SUPABASE_URL;
-const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-if (!url || !key) {
-  console.error('❌ Error: Variables VITE_SUPABASE_URL o VITE_SUPABASE_PUBLISHABLE_KEY ausentes.');
-  process.exit(1);
-}
+const url = process.env.VITE_SUPABASE_URL || 'https://lfmavupbxfkxuzncfzzs.supabase.co';
+const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy';
 
 const supabase = createClient(url, key);
 
