@@ -72,7 +72,7 @@
 - [x] Certificación formal de casos de uso Google OAuth (Casos A, B y C) garantizando rol invariante `PLAYER`.
 - [x] Prevención verificada de duplicidad de identidades en cuenta linking (`ON CONFLICT (id) DO NOTHING`).
 - [x] Auditoría forense automatizada en bundle (`dist/`) con 0 secretos privados expuestos.
-- [x] Suite de pruebas automatizadas ampliada a **156 pruebas PASS** en 12 archivos de prueba (0 fallos).
+- [x] Suite de pruebas automatizadas ampliada a **160 pruebas PASS** en 12 archivos de prueba (0 fallos).
 - [x] Verificación de compilación de producción (`vite build`) y comprobación de tipos (`tsc --noEmit`).
 
 ## Fase 3 — Billetera Digital y Medios de Pago Venezolanos

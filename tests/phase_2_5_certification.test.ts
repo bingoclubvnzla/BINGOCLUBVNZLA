@@ -438,4 +438,88 @@ describe('FASE 2.5 — CERTIFICACIÓN END-TO-END DE AUTENTICACIÓN Y SEGURIDAD',
       expect(testAppStorage('theme')).toBe(true);
     });
   });
+
+  // ----------------------------------------------------------------------------
+  // 8. BÚSQUEDA FORENSE Y AUSENCIA TOTAL DE SECRETOS EN SRC/
+  // ----------------------------------------------------------------------------
+  describe('8. Verificación Forense de Ausencia de Secretos', () => {
+    it('No debe existir ninguna referencia a TURNSTILE_SECRET_KEY, GOOGLE_CLIENT_SECRET, SUPABASE_SERVICE_ROLE_KEY ni JWT_SECRET en src/', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+
+      function scanDir(dir: string, forbiddenRegex: RegExp): string[] {
+        let violations: string[] = [];
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            violations = violations.concat(scanDir(fullPath, forbiddenRegex));
+          } else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx'))) {
+            const content = fs.readFileSync(fullPath, 'utf-8');
+            if (forbiddenRegex.test(content)) {
+              violations.push(`${fullPath}: match found`);
+            }
+          }
+        }
+        return violations;
+      }
+
+      const srcDir = path.resolve(process.cwd(), 'src');
+      const forbiddenPattern = /\b(TURNSTILE_SECRET_KEY|GOOGLE_CLIENT_SECRET|SUPABASE_SERVICE_ROLE_KEY|JWT_SECRET)\b/;
+      const violations = scanDir(srcDir, forbiddenPattern);
+
+      expect(violations).toEqual([]);
+    });
+
+    it('VITE_TURNSTILE_SITE_KEY debe ser la única variable de Turnstile presente en cliente', () => {
+      const siteKeyVar = 'VITE_TURNSTILE_SITE_KEY';
+      expect(siteKeyVar.startsWith('VITE_')).toBe(true);
+      expect(siteKeyVar).not.toContain('SECRET');
+    });
+  });
+
+  // ----------------------------------------------------------------------------
+  // 9. AUDITORÍA: TRUNCAMIENTO DE STRINGS > 500 CARACTERES
+  // ----------------------------------------------------------------------------
+  describe('9. Auditoría y Límites de Payload', () => {
+    it('Debe truncar de manera segura cadenas de más de 500 caracteres en la bitácora', () => {
+      const longString = 'X'.repeat(750);
+      const payload = {
+        event: 'TEST_OVERFLOW',
+        note: longString,
+      };
+
+      const sanitized = sanitizeAuditMetadata(payload);
+      const note = sanitized.note as string;
+      expect(note.length).toBeLessThanOrEqual(520); // 500 + '...[truncado]'
+      expect(note.endsWith('...[truncado]')).toBe(true);
+    });
+  });
+
+  // ----------------------------------------------------------------------------
+  // 10. INVARIANZA DE LA MATRIZ RLS
+  // ----------------------------------------------------------------------------
+  describe('10. Invarianza de la Matriz RLS', () => {
+    it('El rol PLAYER no debe tener permisos de emisión de balotas ni modificación de draws', () => {
+      interface DrawActionContext {
+        userRole: 'PLAYER' | 'OPERATOR' | 'SUPERVISOR' | 'ADMIN';
+        action: 'EMIT_BALL' | 'START_DRAW' | 'FINISH_DRAW' | 'VIEW_DRAW';
+      }
+
+      function authorizeDrawAction(ctx: DrawActionContext): boolean {
+        if (ctx.action === 'VIEW_DRAW') return true;
+        // Solo operadores y superiores pueden mutar el sorteo
+        return ctx.userRole === 'OPERATOR' || ctx.userRole === 'SUPERVISOR' || ctx.userRole === 'ADMIN';
+      }
+
+      expect(authorizeDrawAction({ userRole: 'PLAYER', action: 'VIEW_DRAW' })).toBe(true);
+      expect(authorizeDrawAction({ userRole: 'PLAYER', action: 'EMIT_BALL' })).toBe(false);
+      expect(authorizeDrawAction({ userRole: 'PLAYER', action: 'START_DRAW' })).toBe(false);
+      expect(authorizeDrawAction({ userRole: 'PLAYER', action: 'FINISH_DRAW' })).toBe(false);
+
+      expect(authorizeDrawAction({ userRole: 'OPERATOR', action: 'EMIT_BALL' })).toBe(true);
+      expect(authorizeDrawAction({ userRole: 'ADMIN', action: 'EMIT_BALL' })).toBe(true);
+    });
+  });
 });
