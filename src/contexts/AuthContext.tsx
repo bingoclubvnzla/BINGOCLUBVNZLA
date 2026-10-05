@@ -82,10 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeTestRole, setActiveTestRole] = useState<UserRole | null>(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState<boolean>(false);
 
-  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || '';
+  const defaultTurnstileSiteKey = '0x4AAAAAAFOjgftMybjD3w5c';
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || defaultTurnstileSiteKey;
   const isTurnstileConfigured = Boolean(turnstileSiteKey && turnstileSiteKey.length > 5);
-  // Turnstile fail-closed solo se aplica si la clave del sitio está configurada pero es inválida
-  const isFailClosed = Boolean(turnstileSiteKey && turnstileSiteKey.length <= 5);
+  // Turnstile fail-closed: En PREVIEW y PRODUCTION, si Turnstile no está configurado
+  const isFailClosed = isTurnstileRequired() && !isTurnstileConfigured;
   // Google OAuth está habilitado si Supabase Auth está configurado en el proyecto
   const isGoogleConfigured = isSupabaseConfigured;
 

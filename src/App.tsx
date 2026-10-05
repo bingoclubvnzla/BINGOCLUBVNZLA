@@ -212,7 +212,7 @@ function AppContent() {
   // Protección de rutas por RBAC y autenticación
   const renderActiveView = () => {
     if (activeView === 'play') {
-      const snapshot = createDrawSnapshot(liveDraw, 142, 580);
+      const snapshot = createDrawSnapshot(liveDraw, 1, 1);
       return (
         <LivePlayRoom
           initialSnapshot={snapshot}

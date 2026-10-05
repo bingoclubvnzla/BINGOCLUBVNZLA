@@ -24,6 +24,7 @@ export interface SupabaseHealthReport {
 }
 
 const defaultProductionUrl = 'https://lfmavupbxfkxuzncfzzs.supabase.co';
+const defaultProductionPublishableKey = 'sb_publishable_M84R1OrB_UAz9qVvbVNciQ_YYwyG-iG';
 
 const getStoredCredentials = () => {
   if (typeof window === 'undefined') return { url: '', key: '' };
@@ -50,7 +51,7 @@ const rawAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   stored.key ||
-  '';
+  defaultProductionPublishableKey;
 
 // Validación estricta: Sin inventar valores ni aceptar cadenas placeholder
 export const isSupabaseConfigured = Boolean(

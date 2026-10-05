@@ -50,8 +50,9 @@ export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileP
     const [isLoaded, setIsLoaded] = useState(false);
     const [status, setStatus] = useState<'IDLE' | 'VERIFIED' | 'EXPIRED' | 'ERROR'>('IDLE');
 
-    // Clave de sitio pública de Turnstile desde variables de entorno
-    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || '';
+    // Clave de sitio pública de Turnstile oficial o variable de entorno
+    const defaultTurnstileSiteKey = '0x4AAAAAAFOjgftMybjD3w5c';
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || defaultTurnstileSiteKey;
     const isConfigured = Boolean(siteKey && siteKey.length > 5);
 
     // En PREVIEW y PRODUCTION, Turnstile es estrictamente requerido (Fail-Closed)
