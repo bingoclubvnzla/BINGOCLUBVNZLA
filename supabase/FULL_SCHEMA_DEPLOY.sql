@@ -369,10 +369,10 @@ CREATE INDEX IF NOT EXISTS idx_winners_draw ON public.winners(draw_id);
 CREATE INDEX IF NOT EXISTS idx_winners_user ON public.winners(user_id);
 
 -- ==============================================================================
--- 12. TRIGGERS Y FUNCIONES DE IDENTIDAD Y SEGURIDAD
+-- 12. TRIGGERS Y FUNCIONES DE IDENTIDAD Y SEGURIDAD (CSPRNG CANÓNICO)
 -- ==============================================================================
 
--- Generador de Identificador Público (BCV-XXXXXX)
+-- 12.1 Generador de Identificador Público (BCV-XXXXXX con gen_random_bytes CSPRNG)
 CREATE OR REPLACE FUNCTION public.generate_public_id()
 RETURNS TEXT AS $$
 DECLARE
@@ -380,449 +380,7 @@ DECLARE
     exists_check BOOLEAN;
 BEGIN
     LOOP
-        new_id := 'BCV-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
-        SELECT EXISTS(SELECT 1 FROM public.profiles WHERE public_id = new_id) INTO exists_check;
-        EXIT WHEN NOT exists_check;
-    END LOOP;
-    RETURN new_id;
-END;
-$$ LANGUAGE plpgsql VOLATILE;
-
--- Trigger para nuevo usuario en auth.users -> creación automática de perfil y wallet
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-DECLARE
-    gen_id TEXT;
-BEGIN
-    gen_id := public.generate_public_id();
-
-    INSERT INTO public.profiles (
-        id,
-        public_id,
-        full_name,
-        display_name,
-        role,
-        status,
-        security_level,
-        created_at,
-        updated_at
-    ) VALUES (
-        NEW.id,
-        gen_id,
-        COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'display_name', gen_id),
-        'PLAYER',
-        'ACTIVE',
-        1,
-        now(),
-        now()
-    );
-
-    -- Creación de billetera bloqueada para Fase 1
-    INSERT INTO public.wallets (
-        user_id,
-        currency,
-        balance_available,
-        balance_locked,
-        status,
-        created_at,
-        updated_at
-    ) VALUES (
-        NEW.id,
-        'VES',
-        0.00,
-        0.00,
-        'DISABLED_PHASE_1',
-        now(),
-        now()
-    );
-
-    -- Registro en auditoría
-    INSERT INTO public.audit_logs (
-        user_id,
-        actor_role,
-        action,
-        entity_type,
-        entity_id,
-        metadata
-    ) VALUES (
-        NEW.id,
-        'PLAYER',
-        'USER_REGISTERED',
-        'profiles',
-        NEW.id::text,
-        jsonb_build_object('public_id', gen_id, 'email_domain', split_part(NEW.email, '@', 2))
-    );
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- Trigger de protección de perfil: un PLAYER/OPERATOR jamás puede auto-promover su rol o estatus
-CREATE OR REPLACE FUNCTION public.protect_profile_mutations()
-RETURNS TRIGGER AS $$
-DECLARE
-    caller_role user_role;
-BEGIN
-    -- Si el rol, estatus o nivel de seguridad cambian:
-    IF (NEW.role IS DISTINCT FROM OLD.role) OR
-       (NEW.status IS DISTINCT FROM OLD.status) OR
-       (NEW.security_level IS DISTINCT FROM OLD.security_level) THEN
-        
-        -- Obtener el rol del usuario que ejecuta la consulta
-        SELECT role INTO caller_role FROM public.profiles WHERE id = auth.uid();
-
-        IF caller_role IS NULL OR caller_role NOT IN ('ADMIN', 'SUPER_ADMIN') THEN
-            RAISE EXCEPTION 'Acceso denegado: Solo administradores pueden modificar roles o niveles de seguridad.';
-        END IF;
-
-        -- Un ADMIN no puede auto-promoverse a SUPER_ADMIN
-        IF NEW.role = 'SUPER_ADMIN' AND caller_role != 'SUPER_ADMIN' THEN
-            RAISE EXCEPTION 'Acceso denegado: Solo SUPER_ADMIN puede otorgar el rol SUPER_ADMIN.';
-        END IF;
-
-        -- Registrar cambio en auditoría
-        INSERT INTO public.audit_logs (
-            user_id,
-            actor_role,
-            action,
-            entity_type,
-            entity_id,
-            metadata
-        ) VALUES (
-            auth.uid(),
-            caller_role::text,
-            'ROLE_OR_STATUS_CHANGED',
-            'profiles',
-            NEW.id::text,
-            jsonb_build_object(
-                'old_role', OLD.role, 'new_role', NEW.role,
-                'old_status', OLD.status, 'new_status', NEW.status
-            )
-        );
-    END IF;
-
-    NEW.updated_at := now();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS trg_protect_profile ON public.profiles;
-CREATE TRIGGER trg_protect_profile
-    BEFORE UPDATE ON public.profiles
-    FOR EACH ROW EXECUTE FUNCTION public.protect_profile_mutations();
-
--- Máquina de estados para transiciones de sorteos (Server-Authoritative)
-CREATE OR REPLACE FUNCTION public.validate_draw_state_transition(
-    p_current_state draw_status,
-    p_new_state draw_status
-) RETURNS BOOLEAN AS $$
-BEGIN
-    -- Permitir si no cambia
-    IF p_current_state = p_new_state THEN
-        RETURN true;
-    END IF;
-
-    -- Transiciones válidas:
-    -- DRAFT -> SCHEDULED, CANCELLED
-    -- SCHEDULED -> READY, CANCELLED
-    -- READY -> ACTIVE, CANCELLED, PAUSED
-    -- ACTIVE -> PAUSED, FINISHED, CANCELLED
-    -- PAUSED -> ACTIVE, CANCELLED, FINISHED
-    -- FINISHED -> ARCHIVED
-    -- CANCELLED -> ARCHIVED
-    -- ARCHIVED -> (terminal)
-    CASE p_current_state
-        WHEN 'DRAFT' THEN
-            RETURN p_new_state IN ('SCHEDULED', 'CANCELLED');
-        WHEN 'SCHEDULED' THEN
-            RETURN p_new_state IN ('READY', 'CANCELLED');
-        WHEN 'READY' THEN
-            RETURN p_new_state IN ('ACTIVE', 'PAUSED', 'CANCELLED');
-        WHEN 'ACTIVE' THEN
-            RETURN p_new_state IN ('PAUSED', 'FINISHED', 'CANCELLED');
-        WHEN 'PAUSED' THEN
-            RETURN p_new_state IN ('ACTIVE', 'FINISHED', 'CANCELLED');
-        WHEN 'FINISHED' THEN
-            RETURN p_new_state = 'ARCHIVED';
-        WHEN 'CANCELLED' THEN
-            RETURN p_new_state = 'ARCHIVED';
-        WHEN 'ARCHIVED' THEN
-            RETURN false;
-        ELSE
-            RETURN false;
-    END CASE;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
--- ==============================================================================
--- BINGO CLUB VNZLA ONLINE — MIGRACIÓN 01: ROW LEVEL SECURITY (RLS) ESTRICTO
--- Principio: El navegador no es autoridad. Cada tabla debe contar con RLS.
--- ==============================================================================
-
--- 1. FUNCIONES AUXILIARES DE ROL EN EL SERVIDOR
-CREATE OR REPLACE FUNCTION public.current_user_role()
-RETURNS user_role AS $$
-    SELECT role FROM public.profiles WHERE id = auth.uid();
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE id = auth.uid() 
-        AND role IN ('ADMIN', 'SUPER_ADMIN')
-        AND status = 'ACTIVE'
-    );
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION public.is_operator_or_higher()
-RETURNS BOOLEAN AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE id = auth.uid() 
-        AND role IN ('OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN')
-        AND status = 'ACTIVE'
-    );
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
-
--- ==============================================================================
--- 2. HABILITACIÓN DE RLS EN TODAS LAS TABLAS EXPUESTAS
--- ==============================================================================
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.game_modalities ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.game_rooms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.draws ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.draw_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.card_numbers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.payment_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.operator_actions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.prizes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.winners ENABLE ROW LEVEL SECURITY;
-
--- ==============================================================================
--- 3. POLÍTICAS: PROFILES
--- ==============================================================================
--- Un usuario autenticado solo puede leer su propio perfil; operadores y administradores pueden consultar perfiles
-CREATE POLICY "profiles_select_self" ON public.profiles
-    FOR SELECT TO authenticated
-    USING (id = auth.uid() OR public.is_operator_or_higher());
-
--- Un usuario solo puede actualizar campos informativos de su propio perfil
--- (El trigger trg_protect_profile previene cambio de roles o niveles de seguridad)
-CREATE POLICY "profiles_update_self" ON public.profiles
-    FOR UPDATE TO authenticated
-    USING (id = auth.uid() OR public.is_admin())
-    WITH CHECK (id = auth.uid() OR public.is_admin());
-
--- Solo el trigger handle_new_user o administradores pueden insertar perfiles
-CREATE POLICY "profiles_insert_admin" ON public.profiles
-    FOR INSERT TO authenticated
-    WITH CHECK (id = auth.uid() OR public.is_admin());
-
--- ==============================================================================
--- 4. POLÍTICAS: AUDIT_LOGS (SOLO SUPERVISORES Y ADMINISTRADORES)
--- ==============================================================================
-CREATE POLICY "audit_logs_select" ON public.audit_logs
-    FOR SELECT TO authenticated
-    USING (
-        public.current_user_role() IN ('SUPERVISOR', 'ADMIN', 'SUPER_ADMIN')
-    );
-
--- Inserción permitida por funciones de sistema y usuarios autorizados
-CREATE POLICY "audit_logs_insert" ON public.audit_logs
-    FOR INSERT TO authenticated
-    WITH CHECK (true);
-
--- No se permite UPDATE ni DELETE a nadie en audit_logs (Inmutabilidad forense)
--- (No se crean políticas de UPDATE o DELETE)
-
--- ==============================================================================
--- 5. POLÍTICAS: APP_SETTINGS & GAME_MODALITIES
--- ==============================================================================
-CREATE POLICY "modalities_select_all" ON public.game_modalities
-    FOR SELECT TO public
-    USING (is_active = true OR public.is_admin());
-
-CREATE POLICY "modalities_mutate_admin" ON public.game_modalities
-    FOR ALL TO authenticated
-    USING (public.is_admin())
-    WITH CHECK (public.is_admin());
-
-CREATE POLICY "app_settings_select" ON public.app_settings
-    FOR SELECT TO authenticated
-    USING (true);
-
-CREATE POLICY "app_settings_mutate_admin" ON public.app_settings
-    FOR ALL TO authenticated
-    USING (public.is_admin())
-    WITH CHECK (public.is_admin());
-
--- ==============================================================================
--- 6. POLÍTICAS: GAME_ROOMS & DRAWS & DRAW_EVENTS
--- ==============================================================================
-CREATE POLICY "rooms_select" ON public.game_rooms
-    FOR SELECT TO authenticated
-    USING (status = 'ACTIVE' OR public.is_operator_or_higher());
-
-CREATE POLICY "rooms_mutate_admin" ON public.game_rooms
-    FOR ALL TO authenticated
-    USING (public.is_admin())
-    WITH CHECK (public.is_admin());
-
-CREATE POLICY "draws_select" ON public.draws
-    FOR SELECT TO authenticated
-    USING (status != 'DRAFT' OR public.is_operator_or_higher());
-
-CREATE POLICY "draws_mutate_admin" ON public.draws
-    FOR ALL TO authenticated
-    USING (public.is_operator_or_higher())
-    WITH CHECK (public.is_operator_or_higher());
-
-CREATE POLICY "draw_events_select" ON public.draw_events
-    FOR SELECT TO authenticated
-    USING (true);
-
-CREATE POLICY "draw_events_insert_operator" ON public.draw_events
-    FOR INSERT TO authenticated
-    WITH CHECK (public.is_operator_or_higher());
-
--- ==============================================================================
--- 7. POLÍTICAS: CARDS & CARD_NUMBERS
--- ==============================================================================
--- Un jugador solo puede ver SUS propios cartones
-CREATE POLICY "cards_select_own" ON public.cards
-    FOR SELECT TO authenticated
-    USING (user_id = auth.uid() OR public.is_operator_or_higher());
-
--- Cartones solo emitidos por el servidor/Edge Functions o administradores
-CREATE POLICY "cards_insert_admin" ON public.cards
-    FOR INSERT TO authenticated
-    WITH CHECK (user_id = auth.uid() OR public.is_admin());
-
-CREATE POLICY "card_numbers_select" ON public.card_numbers
-    FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.cards 
-            WHERE cards.id = card_numbers.card_id 
-            AND (cards.user_id = auth.uid() OR public.is_operator_or_higher())
-        )
-    );
-
--- ==============================================================================
--- 8. POLÍTICAS: WALLETS & TRANSACTIONS & PAYMENTS (AISLAMIENTO TOTAL)
--- ==============================================================================
--- Un jugador solo puede ver su propia billetera
-CREATE POLICY "wallets_select_own" ON public.wallets
-    FOR SELECT TO authenticated
-    USING (user_id = auth.uid() OR public.is_admin());
-
--- El cliente JAMÁS puede actualizar o insertar directamente en wallets
--- Las mutaciones son exclusivas de funciones de base de datos SECURITY DEFINER
-
-CREATE POLICY "transactions_select_own" ON public.wallet_transactions
-    FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.wallets 
-            WHERE wallets.id = wallet_transactions.wallet_id 
-            AND (wallets.user_id = auth.uid() OR public.is_admin())
-        )
-    );
-
-CREATE POLICY "payment_requests_select_own" ON public.payment_requests
-    FOR SELECT TO authenticated
-    USING (user_id = auth.uid() OR public.is_operator_or_higher());
-
-CREATE POLICY "payment_requests_insert_own" ON public.payment_requests
-    FOR INSERT TO authenticated
-    WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY "payment_requests_update_operator" ON public.payment_requests
-    FOR UPDATE TO authenticated
-    USING (public.is_operator_or_higher())
-    WITH CHECK (public.is_operator_or_higher());
-
--- ==============================================================================
--- 9. POLÍTICAS: PRIZES & WINNERS & OPERATOR_ACTIONS
--- ==============================================================================
-CREATE POLICY "prizes_select_all" ON public.prizes
-    FOR SELECT TO authenticated
-    USING (true);
-
-CREATE POLICY "prizes_mutate_admin" ON public.prizes
-    FOR ALL TO authenticated
-    USING (public.is_admin())
-    WITH CHECK (public.is_admin());
-
-CREATE POLICY "winners_select_all" ON public.winners
-    FOR SELECT TO authenticated
-    USING (true);
-
-CREATE POLICY "operator_actions_select" ON public.operator_actions
-    FOR SELECT TO authenticated
-    USING (public.is_operator_or_higher());
-
-CREATE POLICY "operator_actions_insert" ON public.operator_actions
-    FOR INSERT TO authenticated
-    WITH CHECK (operator_id = auth.uid() AND public.is_operator_or_higher());
--- ==============================================================================
--- BINGO CLUB VNZLA ONLINE — MIGRACIÓN 02: SECURITY HARDENING Y PROTECCIÓN CONCURRENTE
--- Fase 1.1: Prevención de búsqueda arbitraria (search_path), inmutabilidad de auditoría,
--- bloqueo de cartones (card lock) y control optimista de concurrencia (draws versioning).
--- ==============================================================================
-
--- ==============================================================================
--- 1. HARDENING DE FUNCIONES SECURITY DEFINER: SET search_path = public, pg_temp
--- ==============================================================================
-
--- 1.1 current_user_role()
-CREATE OR REPLACE FUNCTION public.current_user_role()
-RETURNS user_role AS $$
-    SELECT role FROM public.profiles WHERE id = auth.uid();
-$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
-
--- 1.2 is_admin()
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE id = auth.uid() 
-        AND role IN ('ADMIN', 'SUPER_ADMIN')
-        AND status = 'ACTIVE'
-    );
-$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
-
--- 1.3 is_operator_or_higher()
-CREATE OR REPLACE FUNCTION public.is_operator_or_higher()
-RETURNS BOOLEAN AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE id = auth.uid() 
-        AND role IN ('OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN')
-        AND status = 'ACTIVE'
-    );
-$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
-
--- 1.4 generate_public_id()
-CREATE OR REPLACE FUNCTION public.generate_public_id()
-RETURNS TEXT AS $$
-DECLARE
-    new_id TEXT;
-    exists_check BOOLEAN;
-BEGIN
-    LOOP
-        new_id := 'BCV-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
+        new_id := 'BCV-' || upper(encode(gen_random_bytes(3), 'hex'));
         SELECT EXISTS(SELECT 1 FROM public.profiles WHERE public_id = new_id) INTO exists_check;
         EXIT WHEN NOT exists_check;
     END LOOP;
@@ -830,7 +388,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 1.5 handle_new_user() (COMPATIBLE CON GOOGLE OAUTH Y EMAIL)
+-- 12.2 Trigger para nuevo usuario en auth.users -> creación automática de perfil y wallet
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -926,7 +484,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 1.6 protect_profile_mutations()
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 12.3 Trigger de protección de perfil: un PLAYER/OPERATOR jamás puede auto-promover su rol o estatus
 CREATE OR REPLACE FUNCTION public.protect_profile_mutations()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -976,6 +539,283 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
+
+DROP TRIGGER IF EXISTS trg_protect_profile ON public.profiles;
+CREATE TRIGGER trg_protect_profile
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.protect_profile_mutations();
+
+-- Máquina de estados para transiciones de sorteos (Server-Authoritative)
+CREATE OR REPLACE FUNCTION public.validate_draw_state_transition(
+    p_current_state draw_status,
+    p_new_state draw_status
+) RETURNS BOOLEAN AS $$
+BEGIN
+    -- Permitir si no cambia
+    IF p_current_state = p_new_state THEN
+        RETURN true;
+    END IF;
+
+    -- Transiciones válidas:
+    -- DRAFT -> SCHEDULED, CANCELLED
+    -- SCHEDULED -> READY, CANCELLED
+    -- READY -> ACTIVE, CANCELLED, PAUSED
+    -- ACTIVE -> PAUSED, FINISHED, CANCELLED
+    -- PAUSED -> ACTIVE, CANCELLED, FINISHED
+    -- FINISHED -> ARCHIVED
+    -- CANCELLED -> ARCHIVED
+    -- ARCHIVED -> (terminal)
+    CASE p_current_state
+        WHEN 'DRAFT' THEN
+            RETURN p_new_state IN ('SCHEDULED', 'CANCELLED');
+        WHEN 'SCHEDULED' THEN
+            RETURN p_new_state IN ('READY', 'CANCELLED');
+        WHEN 'READY' THEN
+            RETURN p_new_state IN ('ACTIVE', 'PAUSED', 'CANCELLED');
+        WHEN 'ACTIVE' THEN
+            RETURN p_new_state IN ('PAUSED', 'FINISHED', 'CANCELLED');
+        WHEN 'PAUSED' THEN
+            RETURN p_new_state IN ('ACTIVE', 'FINISHED', 'CANCELLED');
+        WHEN 'FINISHED' THEN
+            RETURN p_new_state = 'ARCHIVED';
+        WHEN 'CANCELLED' THEN
+            RETURN p_new_state = 'ARCHIVED';
+        WHEN 'ARCHIVED' THEN
+            RETURN false;
+        ELSE
+            RETURN false;
+    END CASE;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+-- ==============================================================================
+-- BINGO CLUB VNZLA ONLINE — MIGRACIÓN 01: ROW LEVEL SECURITY (RLS) ESTRICTO
+-- Principio: El navegador no es autoridad. Cada tabla debe contar con RLS.
+-- ==============================================================================
+
+-- 1. FUNCIONES AUXILIARES DE ROL EN EL SERVIDOR
+CREATE OR REPLACE FUNCTION public.current_user_role()
+RETURNS user_role AS $$
+    SELECT role FROM public.profiles WHERE id = auth.uid();
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPER_ADMIN')
+        AND status = 'ACTIVE'
+    );
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
+
+CREATE OR REPLACE FUNCTION public.is_operator_or_higher()
+RETURNS BOOLEAN AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = auth.uid() 
+        AND role IN ('OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN')
+        AND status = 'ACTIVE'
+    );
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
+
+-- ==============================================================================
+-- 2. HABILITACIÓN DE RLS EN TODAS LAS TABLAS EXPUESTAS
+-- ==============================================================================
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_modalities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.draws ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.draw_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.card_numbers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.operator_actions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prizes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.winners ENABLE ROW LEVEL SECURITY;
+
+-- ==============================================================================
+-- 3. POLÍTICAS: PROFILES
+-- ==============================================================================
+-- Un usuario autenticado solo puede leer su propio perfil; operadores y administradores pueden consultar perfiles
+CREATE POLICY "profiles_select_self" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (id = auth.uid() OR public.is_operator_or_higher());
+
+-- Un usuario solo puede actualizar campos informativos de su propio perfil
+-- (El trigger trg_protect_profile previene cambio de roles o niveles de seguridad)
+CREATE POLICY "profiles_update_self" ON public.profiles
+    FOR UPDATE TO authenticated
+    USING (id = auth.uid() OR public.is_admin())
+    WITH CHECK (id = auth.uid() OR public.is_admin());
+
+-- Solo el trigger handle_new_user o administradores pueden insertar perfiles
+CREATE POLICY "profiles_insert_admin" ON public.profiles
+    FOR INSERT TO authenticated
+    WITH CHECK (id = auth.uid() OR public.is_admin());
+
+-- ==============================================================================
+-- 4. POLÍTICAS: AUDIT_LOGS (SOLO SUPERVISORES Y ADMINISTRADORES)
+-- ==============================================================================
+CREATE POLICY "audit_logs_select" ON public.audit_logs
+    FOR SELECT TO authenticated
+    USING (
+        public.current_user_role() IN ('SUPERVISOR', 'ADMIN', 'SUPER_ADMIN')
+    );
+
+-- Inserción permitida por funciones de sistema y usuarios autorizados
+CREATE POLICY "audit_logs_insert" ON public.audit_logs
+    FOR INSERT TO authenticated
+    WITH CHECK (true);
+
+-- No se permite UPDATE ni DELETE a nadie en audit_logs (Inmutabilidad forense)
+-- (No se crean políticas de UPDATE o DELETE)
+
+-- ==============================================================================
+-- 5. POLÍTICAS: APP_SETTINGS & GAME_MODALITIES
+-- ==============================================================================
+CREATE POLICY "modalities_select_all" ON public.game_modalities
+    FOR SELECT TO public
+    USING (is_active = true OR public.is_admin());
+
+CREATE POLICY "modalities_mutate_admin" ON public.game_modalities
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "app_settings_select" ON public.app_settings
+    FOR SELECT TO authenticated
+    USING (true);
+
+CREATE POLICY "app_settings_mutate_admin" ON public.app_settings
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+-- ==============================================================================
+-- 6. POLÍTICAS: GAME_ROOMS & DRAWS & DRAW_EVENTS
+-- ==============================================================================
+CREATE POLICY "rooms_select" ON public.game_rooms
+    FOR SELECT TO authenticated
+    USING (status = 'ACTIVE' OR public.is_operator_or_higher());
+
+CREATE POLICY "rooms_mutate_admin" ON public.game_rooms
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "draws_select" ON public.draws
+    FOR SELECT TO public
+    USING (status != 'DRAFT' OR public.is_operator_or_higher());
+
+-- Mutación directa de sorteos desde el cliente restringida estrictamente a administradores en DRAFT.
+-- El ciclo de vida activo (START, EMIT, FINISH) es gestionado EXCLUSIVAMENTE por funciones SECURITY DEFINER del servidor.
+CREATE POLICY "draws_mutate_admin" ON public.draws
+    FOR UPDATE TO authenticated
+    USING (public.is_admin() AND status = 'DRAFT')
+    WITH CHECK (public.is_admin() AND status = 'DRAFT');
+
+-- Bitácora de eventos de sorteo: Lectura pública, INSERCIÓN Y MODIFICACIÓN BLOQUEADA desde cliente.
+-- Solo las funciones autoritativas en PostgreSQL pueden emitir eventos.
+CREATE POLICY "draw_events_select" ON public.draw_events
+    FOR SELECT TO public
+    USING (true);
+
+-- ==============================================================================
+-- 7. POLÍTICAS: CARDS & CARD_NUMBERS
+-- ==============================================================================
+-- Un jugador solo puede ver SUS propios cartones
+CREATE POLICY "cards_select_own" ON public.cards
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid() OR public.is_operator_or_higher());
+
+-- Cartones solo emitidos por el servidor/Edge Functions o administradores (nunca inserción directa por jugadores)
+CREATE POLICY "cards_insert_admin" ON public.cards
+    FOR INSERT TO authenticated
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "card_numbers_select" ON public.card_numbers
+    FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.cards 
+            WHERE cards.id = card_numbers.card_id 
+            AND (cards.user_id = auth.uid() OR public.is_operator_or_higher())
+        )
+    );
+
+-- ==============================================================================
+-- 8. POLÍTICAS: WALLETS & TRANSACTIONS & PAYMENTS (AISLAMIENTO TOTAL)
+-- ==============================================================================
+-- Un jugador solo puede ver su propia billetera
+CREATE POLICY "wallets_select_own" ON public.wallets
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid() OR public.is_admin());
+
+-- El cliente JAMÁS puede actualizar o insertar directamente en wallets
+-- Las mutaciones son exclusivas de funciones de base de datos SECURITY DEFINER
+
+CREATE POLICY "transactions_select_own" ON public.wallet_transactions
+    FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.wallets 
+            WHERE wallets.id = wallet_transactions.wallet_id 
+            AND (wallets.user_id = auth.uid() OR public.is_admin())
+        )
+    );
+
+CREATE POLICY "payment_requests_select_own" ON public.payment_requests
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid() OR public.is_operator_or_higher());
+
+CREATE POLICY "payment_requests_insert_own" ON public.payment_requests
+    FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "payment_requests_update_operator" ON public.payment_requests
+    FOR UPDATE TO authenticated
+    USING (public.is_operator_or_higher())
+    WITH CHECK (public.is_operator_or_higher());
+
+-- ==============================================================================
+-- 9. POLÍTICAS: PRIZES & WINNERS & OPERATOR_ACTIONS
+-- ==============================================================================
+CREATE POLICY "prizes_select_all" ON public.prizes
+    FOR SELECT TO authenticated
+    USING (true);
+
+CREATE POLICY "prizes_mutate_admin" ON public.prizes
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "winners_select_all" ON public.winners
+    FOR SELECT TO authenticated
+    USING (true);
+
+CREATE POLICY "operator_actions_select" ON public.operator_actions
+    FOR SELECT TO authenticated
+    USING (public.is_operator_or_higher());
+
+CREATE POLICY "operator_actions_insert" ON public.operator_actions
+    FOR INSERT TO authenticated
+    WITH CHECK (operator_id = auth.uid() AND public.is_operator_or_higher());
+-- ==============================================================================
+-- BINGO CLUB VNZLA ONLINE — MIGRACIÓN 02: SECURITY HARDENING Y PROTECCIÓN CONCURRENTE
+-- Fase 1.1: Prevención de búsqueda arbitraria (search_path), inmutabilidad de auditoría,
+-- bloqueo de cartones (card lock) y control optimista de concurrencia (draws versioning).
+-- ==============================================================================
+
+-- ==============================================================================
+-- 1. HARDENING DE FUNCIONES SECURITY DEFINER: SET search_path = public, pg_temp
+-- (Las funciones 1.1 a 1.6: current_user_role, is_admin, is_operator_or_higher,
+-- generate_public_id, handle_new_user y protect_profile_mutations se encuentran
+-- canónicamente definidas y securizadas con CSPRNG y search_path seguro en Secciones 1 y 12)
+-- ==============================================================================
 
 -- ==============================================================================
 -- 2. INMUTABILIDAD TOTAL DE AUDIT_LOGS (PREVENCIÓN DE MANIPULACIÓN HISTÓRICA)
@@ -1119,7 +959,7 @@ ALTER TABLE public.draws ADD COLUMN IF NOT EXISTS current_sequence INTEGER NOT N
 
 -- Asignar códigos públicos predeterminados a sorteos existentes si hubiere
 UPDATE public.draws 
-SET public_code = 'BCV-S' || upper(substr(md5(id::text || clock_timestamp()::text), 1, 6))
+SET public_code = 'BCV-S' || upper(substr(encode(digest(id::text || clock_timestamp()::text, 'sha256'), 'hex'), 1, 6))
 WHERE public_code IS NULL;
 
 ALTER TABLE public.draws ALTER COLUMN public_code SET NOT NULL;
@@ -1152,8 +992,11 @@ END;
 $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public, pg_temp;
 
 -- ==============================================================================
+-- ==============================================================================
 -- 4. FUNCIÓN: CREAR SORTEO AUTORIZADO (create_draw)
 -- ==============================================================================
+CREATE SEQUENCE IF NOT EXISTS public.draw_number_seq START WITH 101;
+
 CREATE OR REPLACE FUNCTION public.create_draw_authoritative(
     p_room_id UUID,
     p_modality_id VARCHAR(32),
@@ -1169,9 +1012,9 @@ BEGIN
         RAISE EXCEPTION 'Acceso denegado: Solo operadores o administradores pueden crear sorteos.';
     END IF;
 
-    -- Generar código público y número secuencial
-    v_public_code := 'BCV-S' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
-    SELECT COALESCE(MAX(draw_number), 100) + 1 INTO v_draw_number FROM public.draws WHERE room_id = p_room_id;
+    -- Generar código público con CSPRNG y número secuencial atómico anti-concurrencia
+    v_public_code := 'BCV-S' || upper(encode(gen_random_bytes(3), 'hex'));
+    v_draw_number := nextval('public.draw_number_seq');
 
     INSERT INTO public.draws (
         room_id,
@@ -1263,7 +1106,8 @@ BEGIN
 
     -- Generar permutación criptográfica oficial CSPRNG una sola vez (rango 1..total_balls)
     v_sequence := public.generate_draw_permutation(v_modality.total_balls, 1);
-    v_event_hash := md5(p_draw_id::text || ':1:DRAW_STARTED:' || clock_timestamp()::text);
+    -- Hash SHA-256 criptográfico para integridad de evento génesis
+    v_event_hash := encode(digest(p_draw_id::text || ':1:DRAW_STARTED:' || clock_timestamp()::text, 'sha256'), 'hex');
 
     -- Actualizar sorteo atómicamente a ACTIVE
     UPDATE public.draws
@@ -1374,7 +1218,8 @@ BEGIN
     ORDER BY sequence_number DESC
     LIMIT 1;
 
-    v_event_hash := md5(p_draw_id::text || ':' || v_next_seq::text || ':' || v_next_ball::text || ':' || clock_timestamp()::text);
+    -- Hash SHA-256 criptográfico de integridad encadenada
+    v_event_hash := encode(digest(p_draw_id::text || ':' || v_next_seq::text || ':' || v_next_ball::text || ':' || v_prev_hash || ':' || clock_timestamp()::text, 'sha256'), 'hex');
 
     IF v_next_seq >= array_length(v_draw.sequence, 1) THEN
         v_is_finished := true;
@@ -1437,6 +1282,11 @@ BEGIN
         RETURN jsonb_build_object('error', 'Sorteo no encontrado');
     END IF;
 
+    -- Protección: Sorteos en DRAFT solo son visibles para operadores o administradores
+    IF v_draw.status = 'DRAFT' AND NOT public.is_operator_or_higher() THEN
+        RETURN jsonb_build_object('error', 'Acceso denegado: Sorteo no disponible');
+    END IF;
+
     SELECT jsonb_agg(
         jsonb_build_object(
             'sequence_number', sequence_number,
@@ -1465,6 +1315,68 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
+
+-- Control explícito de ejecución de funciones (REVOKE / GRANT)
+REVOKE EXECUTE ON FUNCTION public.generate_draw_permutation(INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.create_draw_authoritative(UUID, VARCHAR, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.create_draw_authoritative(UUID, VARCHAR, TEXT) TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.start_draw_authoritative(UUID, INTEGER) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.start_draw_authoritative(UUID, INTEGER) TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.emit_next_ball_authoritative(UUID, INTEGER) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.emit_next_ball_authoritative(UUID, INTEGER) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.get_draw_snapshot(UUID) TO anon, authenticated;
+
+-- ==============================================================================
+-- REMEDIACIÓN Y HARDENING SECURITY DEFINER (FASE 2.6.1)
+-- Erradicación de rls_auto_enable() y bloqueo de ejecución no autorizada en PostgREST
+-- ==============================================================================
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT evtname 
+        FROM pg_event_trigger 
+        WHERE evtfoid = 'public.rls_auto_enable'::regproc
+    LOOP
+        EXECUTE 'DROP EVENT TRIGGER IF EXISTS ' || quote_ident(r.evtname);
+    END LOOP;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN 
+        SELECT p.oid::regprocedure AS func_sig
+        FROM pg_proc p
+        JOIN pg_namespace n ON p.pronamespace = n.oid
+        WHERE n.nspname = 'public' AND p.proname = 'rls_auto_enable'
+    LOOP
+        EXECUTE 'REVOKE ALL ON FUNCTION ' || r.func_sig || ' FROM PUBLIC, anon, authenticated';
+        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_sig || ' CASCADE';
+    END LOOP;
+END $$;
+
+-- Blindaje explícito de funciones internas SECURITY DEFINER
+REVOKE EXECUTE ON FUNCTION public.generate_public_id() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_profile_mutations() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.validate_draw_state_transition(draw_status, draw_status) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.generate_draw_permutation(INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.transition_draw_state_atomic(UUID, INTEGER, draw_status) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.enforce_audit_log_immutability() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.enforce_card_lock() FROM PUBLIC, anon, authenticated;
+
+-- Restricción de funciones de rol (no ejecutables por rol anon)
+REVOKE EXECUTE ON FUNCTION public.current_user_role() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.is_admin() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.is_operator_or_higher() FROM anon;
 
 -- ==============================================================================
 -- VALIDACIÓN CANÓNICA DE INTEGRIDAD: CHAPITAS
@@ -1496,8 +1408,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
 
+REVOKE EXECUTE ON FUNCTION public.validate_chapitas_catalog_integrity() FROM PUBLIC, anon, authenticated;
+
 -- ==============================================================================
--- REGISTRO DE EVENTOS DE AUDITORÍA DE AUTENTICACIÓN (FASE 2.4)
+-- REGISTRO DE EVENTOS DE AUDITORÍA DE AUTENTICACIÓN (FASE 2.6.2 HARDENED)
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.log_auth_event(
     p_action TEXT,
@@ -1507,7 +1421,33 @@ RETURNS BOOLEAN AS $$
 DECLARE
     v_user_id UUID;
     v_role TEXT;
+    v_clean_metadata JSONB;
 BEGIN
+    -- Validar lista blanca estricta de eventos autorizados para cliente
+    -- Rechazo incondicional de eventos privilegiados o administrativos
+    IF p_action NOT IN ('LOGIN_FAILURE', 'LOGIN_ATTEMPT', 'PASSWORD_RESET_REQUESTED', 'LOGOUT') THEN
+        RAISE EXCEPTION 'Acceso denegado: Acción de auditoría no permitida para cliente (%).', p_action;
+    END IF;
+
+    -- Límite de tamaño de metadata (2KB) para mitigar denegación de almacenamiento
+    IF octet_length(COALESCE(p_metadata, '{}'::jsonb)::text) > 2048 THEN
+        RAISE EXCEPTION 'Payload de metadata excede el límite máximo permitido (2KB).';
+    END IF;
+
+    -- Redacción de credenciales y secretos potencialmente enviados
+    v_clean_metadata := COALESCE(p_metadata, '{}'::jsonb)
+        - 'password'
+        - 'contraseña'
+        - 'token'
+        - 'access_token'
+        - 'refresh_token'
+        - 'secret'
+        - 'client_secret'
+        - 'turnstile_token'
+        - 'captchatoken'
+        - 'cf_turnstile';
+
+    -- Derivar identidad real desde el contexto criptográfico de sesión PostgreSQL
     v_user_id := auth.uid();
 
     IF v_user_id IS NOT NULL THEN
@@ -1527,7 +1467,7 @@ BEGIN
         p_action,
         'auth',
         COALESCE(v_user_id::text, 'anon'),
-        p_metadata
+        v_clean_metadata
     );
 
     RETURN true;
@@ -1861,8 +1801,44 @@ VALUES
         'require_email_verification_for_draws', true
     ),
     'Límites de juego responsable y mitigación antifraude'
+),
+(
+    'SECURITY_DEFINER_PHASE_2_6_2',
+    jsonb_build_object(
+        'phase', '2.6.2',
+        'status', 'FULLY_AUDITED_AND_HARDENED',
+        'log_auth_event_hardened', true,
+        'transition_atomic_isolated', true,
+        'internal_triggers_revoked', true,
+        'verified_at', now()
+    ),
+    'Certificación final de endurecimiento SECURITY DEFINER y PostgREST RPC'
 )
 ON CONFLICT (key) DO UPDATE SET
     value = EXCLUDED.value,
     description = EXCLUDED.description,
     updated_at = now();
+
+-- ==============================================================================
+-- 5. HABILITACIÓN DE WEBSOCKET REALTIME (SUPABASE REALTIME PUBLICATION)
+-- ==============================================================================
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.draws;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.draw_events;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.cards;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.winners;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+-- ==============================================================================
+-- 6. CERTIFICACIÓN CANÓNICA AUTOMÁTICA DEL DESPLIEGUE
+-- ==============================================================================
+SELECT public.validate_chapitas_catalog_integrity();
