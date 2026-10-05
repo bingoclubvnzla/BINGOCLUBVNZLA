@@ -9,6 +9,8 @@ import { LandingPage } from './components/LandingPage';
 import { PlayerDashboard } from './components/PlayerDashboard';
 import { OperatorDashboard } from './components/OperatorDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
+import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard';
+import { SupervisorDashboard } from './components/dashboard/SupervisorDashboard';
 import { LivePlayRoom } from './components/LivePlayRoom';
 import { AuthModal } from './components/AuthModal';
 import { ShieldAlert } from 'lucide-react';
@@ -23,10 +25,12 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { DRAW_REALTIME_EVENTS } from './types/realtimeEvents';
 import { SupabaseDiagnosticModal } from './components/SupabaseDiagnosticModal';
 import type { ModalityCode } from './types/database';
+import type { AppView } from './components/Navbar';
+import { hasSufficientRole } from './lib/adminIdentities';
 
 function AppContent() {
   const { isAuthenticated, role, publicId } = useAuth();
-  const [activeView, setActiveView] = useState<'landing' | 'player' | 'operator' | 'admin' | 'play'>('landing');
+  const [activeView, setActiveView] = useState<AppView>('landing');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
@@ -104,8 +108,54 @@ function AppContent() {
       );
     }
 
+    if (activeView === 'super-admin') {
+      if (role !== 'SUPER_ADMIN') {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-xl border border-rose-500/30 bg-rose-950/20 p-6 text-center">
+              <ShieldAlert className="h-10 w-10 text-rose-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Acceso Exclusivo SUPER_ADMIN</h2>
+              <p className="mt-2 text-xs text-slate-300">
+                Se requiere el rol de máxima jerarquía <strong className="text-rose-400">SUPER_ADMIN</strong> (identidad autoritativa server-side) para acceder al panel maestro de gobernanza, sincronización y asignación de roles. Su rol actual es <strong className="text-amber-400">{role}</strong>.
+              </p>
+              <button
+                onClick={() => setActiveView('player')}
+                className="mt-5 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
+              >
+                Volver a mi Panel de Jugador
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return <SuperAdminDashboard onEnterLiveRoom={handleEnterLiveRoom} />;
+    }
+
+    if (activeView === 'supervisor') {
+      if (!hasSufficientRole(role, 'SUPERVISOR')) {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-6 text-center">
+              <ShieldAlert className="h-10 w-10 text-indigo-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Módulo de Supervisión</h2>
+              <p className="mt-2 text-xs text-slate-300">
+                Este panel requiere rol de <strong className="text-indigo-400">SUPERVISOR</strong>, <strong className="text-rose-400">ADMIN</strong> o <strong className="text-rose-400">SUPER_ADMIN</strong>. Su rol actual es <strong className="text-amber-400">{role}</strong>.
+              </p>
+              <button
+                onClick={() => setActiveView('player')}
+                className="mt-5 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
+              >
+                Volver a mi Panel de Jugador
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return <SupervisorDashboard onEnterLiveRoom={handleEnterLiveRoom} />;
+    }
+
     if (activeView === 'admin') {
-      if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      if (!hasSufficientRole(role, 'ADMIN')) {
         return (
           <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
             <div className="max-w-md rounded-xl border border-rose-500/30 bg-rose-950/20 p-6 text-center">
@@ -128,14 +178,14 @@ function AppContent() {
     }
 
     if (activeView === 'operator') {
-      if (role === 'PLAYER') {
+      if (!hasSufficientRole(role, 'OPERATOR')) {
         return (
           <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
             <div className="max-w-md rounded-xl border border-amber-500/30 bg-amber-950/20 p-6 text-center">
               <ShieldAlert className="h-10 w-10 text-amber-400 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-white font-display">Módulo de Operaciones</h2>
               <p className="mt-2 text-xs text-slate-300">
-                Este panel es exclusivo para OPERADORES, SUPERVISORES y ADMINISTRADORES.
+                Este panel es exclusivo para OPERADORES, SUPERVISORES y ADMINISTRADORES. Su rol actual es <strong className="text-amber-400">{role}</strong>.
               </p>
               <button
                 onClick={() => setActiveView('player')}

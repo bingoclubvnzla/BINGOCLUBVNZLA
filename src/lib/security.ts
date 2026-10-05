@@ -35,6 +35,17 @@ export function canAccessAdmin(role: AppRole): boolean {
 }
 
 /**
+ * Matriz de Permisos por Rol
+ */
+export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
+  PLAYER: ['play_games', 'view_draws', 'view_profile'],
+  OPERATOR: ['play_games', 'view_draws', 'view_profile', 'validate_payments', 'emit_balls', 'manage_rooms'],
+  SUPERVISOR: ['play_games', 'view_draws', 'view_profile', 'validate_payments', 'emit_balls', 'manage_rooms', 'view_audit_logs', 'approve_withdrawals'],
+  ADMIN: ['play_games', 'view_draws', 'view_profile', 'validate_payments', 'emit_balls', 'manage_rooms', 'view_audit_logs', 'approve_withdrawals', 'manage_users', 'system_config'],
+  SUPER_ADMIN: ['play_games', 'view_draws', 'view_profile', 'validate_payments', 'emit_balls', 'manage_rooms', 'view_audit_logs', 'approve_withdrawals', 'manage_users', 'system_config', 'full_override'],
+};
+
+/**
  * Generador de UUID v4 criptográfico para claves de idempotencia (CSPRNG estricto)
  */
 export function generateIdempotencyKey(): string {
@@ -187,6 +198,8 @@ export function canTransitionDrawStatus(current: DrawStatus, target: DrawStatus)
   const allowed = ALLOWED_DRAW_TRANSITIONS[current] || [];
   return allowed.includes(target);
 }
+
+export const isValidDrawTransition = canTransitionDrawStatus;
 
 /**
  * Validador de contraseña segura

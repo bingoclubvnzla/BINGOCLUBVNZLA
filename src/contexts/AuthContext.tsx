@@ -59,6 +59,15 @@ export interface AuthContextType {
   // Alternador de rol para auditoría de interfaz en modo desarrollo/pruebas
   activeTestRole: UserRole | null;
   setActiveTestRole: (role: UserRole | null) => void;
+  // Aliases de compatibilidad para componentes de fases previas
+  effectiveRole: UserRole;
+  logout: () => Promise<void>;
+  login: (emailOrPayload: string | { email: string; password: string }, maybePassword?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  register: (payload: { email: string; password: string; fullName?: string; displayName?: string; phone?: string }) => Promise<{ success: boolean; error?: string; message?: string }>;
+  updateProfile: (updates: { full_name?: string; display_name?: string; phone?: string; displayName?: string; fullName?: string }) => Promise<{ success: boolean; error?: string | null; message?: string }>;
+  setActiveRolePreview: (role: UserRole | null) => void;
+  error: string | null;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -624,6 +633,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshProfile,
         activeTestRole,
         setActiveTestRole,
+        effectiveRole,
+        logout: signOut,
+        login: async (emailOrPayload, maybePassword) => {
+          const email = typeof emailOrPayload === 'string' ? emailOrPayload : emailOrPayload.email;
+          const password = typeof emailOrPayload === 'string' ? maybePassword || '' : emailOrPayload.password;
+          const res = await signIn(email, password);
+          return { success: res.success, error: res.error, message: res.error };
+        },
+        register: async (p) => {
+          const res = await signUp(p.email, p.password, p.fullName || p.displayName || 'Jugador');
+          return { success: res.success, error: res.error, message: res.error };
+        },
+        updateProfile: async (updates) => {
+          const mappedUpdates = {
+            full_name: updates.full_name || updates.fullName,
+            display_name: updates.display_name || updates.displayName,
+            phone: updates.phone,
+          };
+          const res = await updateProfileDetails(mappedUpdates);
+          return { success: res.success, error: res.error, message: res.error || (res.success ? 'Perfil actualizado' : 'Error') };
+        },
+        setActiveRolePreview: setActiveTestRole,
+        error: authError,
+        clearError: () => setAuthError(null),
       }}
     >
       {children}

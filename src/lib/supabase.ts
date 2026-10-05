@@ -314,3 +314,50 @@ export async function fetchRecentAuditLogs(limit = 20): Promise<{ data: AuditLog
 export const getProfile = fetchUserProfile;
 export const updateProfile = updateUserProfile;
 
+/**
+ * Mapeo de errores de autenticación a mensajes amigables y seguros en español
+ * Previene la fuga de información interna (tablas SQL, constraints, líneas de código).
+ */
+export function getFriendlyAuthErrorMessage(error: any): string {
+  if (!error) return 'Error desconocido de autenticación.';
+  const msg = typeof error === 'string' ? error : error?.message || '';
+
+  // Detección de errores internos de base de datos
+  if (
+    msg.includes('foreign key') ||
+    msg.includes('postgres.c') ||
+    msg.includes('relation "') ||
+    msg.includes('Database error') ||
+    msg.includes('schema cache') ||
+    msg.includes('PGRST')
+  ) {
+    return 'Ocurrió un error en el servidor. Por favor intente más tarde.';
+  }
+
+  if (msg.includes('Invalid login credentials')) {
+    return 'Credenciales incorrectas. Verifique su correo electrónico y contraseña.';
+  }
+
+  if (msg.includes('User already registered')) {
+    return 'Ya existe una cuenta registrada con este correo electrónico.';
+  }
+
+  if (msg.includes('Password should be at least 6 characters')) {
+    return 'La contraseña debe contener al menos 6 caracteres seguros.';
+  }
+
+  if (msg.includes('Email not confirmed')) {
+    return 'El correo electrónico no ha sido verificado. Revise su bandeja de entrada.';
+  }
+
+  return msg || 'Error en la operación de autenticación.';
+}
+
+export function setCustomSupabaseCredentials(_url: string, _key: string): boolean {
+  return false;
+}
+
+export function clearCustomSupabaseCredentials(): boolean {
+  return false;
+}
+

@@ -7,13 +7,16 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Shield, User, LogOut, Menu, X, ChevronDown, CheckCircle2, AlertCircle, Database } from 'lucide-react';
+import { Shield, User, LogOut, Menu, X, ChevronDown, CheckCircle2, AlertCircle, Database, ShieldAlert } from 'lucide-react';
 import type { UserRole } from '../types/database';
+import { hasSufficientRole } from '../lib/adminIdentities';
+
+export type AppView = 'landing' | 'player' | 'operator' | 'supervisor' | 'admin' | 'super-admin' | 'play';
 
 interface NavbarProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
-  activeView: 'landing' | 'player' | 'operator' | 'admin' | 'play';
-  setActiveView: (view: 'landing' | 'player' | 'operator' | 'admin' | 'play') => void;
+  activeView: AppView;
+  setActiveView: (view: AppView) => void;
   onOpenDiagnostic?: () => void;
 }
 
@@ -25,9 +28,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
   const handleRoleSwitch = (newRole: UserRole | null) => {
     setActiveTestRole(newRole);
     setRoleSwitcherOpen(false);
-    if (newRole === 'ADMIN' || newRole === 'SUPER_ADMIN') {
+    if (newRole === 'SUPER_ADMIN') {
+      setActiveView('super-admin');
+    } else if (newRole === 'ADMIN') {
       setActiveView('admin');
-    } else if (newRole === 'OPERATOR' || newRole === 'SUPERVISOR') {
+    } else if (newRole === 'SUPERVISOR') {
+      setActiveView('supervisor');
+    } else if (newRole === 'OPERATOR') {
       setActiveView('operator');
     } else {
       setActiveView('player');
@@ -96,16 +103,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
             Preguntas
           </a>
 
-          {/* Si está autenticado, enlaces a vistas de dashboards según rol */}
+          {/* Si está autenticado, enlaces a vistas de dashboards según rol (Fase 2.9) */}
           {isAuthenticated && (
-            <div className="flex items-center gap-4 pl-3 border-l border-slate-800">
+            <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
               <button
                 onClick={() => setActiveView('player')}
                 className={`transition-colors hover:text-amber-400 ${activeView === 'player' ? 'text-amber-400 font-semibold' : ''}`}
               >
                 Mi Panel
               </button>
-              {(role === 'OPERATOR' || role === 'SUPERVISOR' || role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+              {hasSufficientRole(role, 'OPERATOR') && (
                 <button
                   onClick={() => setActiveView('operator')}
                   className={`transition-colors hover:text-amber-400 ${activeView === 'operator' ? 'text-amber-400 font-semibold' : ''}`}
@@ -113,12 +120,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
                   Operador
                 </button>
               )}
-              {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+              {hasSufficientRole(role, 'SUPERVISOR') && (
+                <button
+                  onClick={() => setActiveView('supervisor')}
+                  className={`transition-colors hover:text-amber-400 ${activeView === 'supervisor' ? 'text-amber-400 font-semibold' : ''}`}
+                >
+                  Supervisor
+                </button>
+              )}
+              {hasSufficientRole(role, 'ADMIN') && (
                 <button
                   onClick={() => setActiveView('admin')}
                   className={`transition-colors hover:text-amber-400 ${activeView === 'admin' ? 'text-amber-400 font-semibold' : ''}`}
                 >
                   Admin
+                </button>
+              )}
+              {role === 'SUPER_ADMIN' && (
+                <button
+                  onClick={() => setActiveView('super-admin')}
+                  className={`transition-colors hover:text-rose-400 flex items-center gap-1 ${activeView === 'super-admin' ? 'text-rose-400 font-bold' : 'text-slate-300'}`}
+                >
+                  <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+                  <span>Super Admin</span>
                 </button>
               )}
             </div>
@@ -266,7 +290,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
               >
                 Mi Panel de Jugador
               </button>
-              {(role === 'OPERATOR' || role === 'SUPERVISOR' || role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+              {hasSufficientRole(role, 'OPERATOR') && (
                 <button
                   onClick={() => { setActiveView('operator'); setMobileMenuOpen(false); }}
                   className="block w-full text-left py-2 text-sm font-medium text-sky-400"
@@ -274,12 +298,28 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
                   Panel Operador
                 </button>
               )}
-              {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+              {hasSufficientRole(role, 'SUPERVISOR') && (
+                <button
+                  onClick={() => { setActiveView('supervisor'); setMobileMenuOpen(false); }}
+                  className="block w-full text-left py-2 text-sm font-medium text-amber-400"
+                >
+                  Panel Supervisor
+                </button>
+              )}
+              {hasSufficientRole(role, 'ADMIN') && (
                 <button
                   onClick={() => { setActiveView('admin'); setMobileMenuOpen(false); }}
                   className="block w-full text-left py-2 text-sm font-medium text-rose-400"
                 >
                   Panel Administrador
+                </button>
+              )}
+              {role === 'SUPER_ADMIN' && (
+                <button
+                  onClick={() => { setActiveView('super-admin'); setMobileMenuOpen(false); }}
+                  className="block w-full text-left py-2 text-sm font-medium text-rose-500 font-bold"
+                >
+                  Panel SUPER_ADMIN
                 </button>
               )}
             </div>
