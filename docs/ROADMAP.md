@@ -75,6 +75,25 @@
 - [x] Suite de pruebas automatizadas ampliada a **160 pruebas PASS** en 12 archivos de prueba (0 fallos).
 - [x] Verificación de compilación de producción (`vite build`) y comprobación de tipos (`tsc --noEmit`).
 
+## Fase 2.6 & 2.6.1 — Despliegue de Schema Remoto y Remediación SECURITY DEFINER (COMPLETADA)
+- [x] Configuración y validación del proyecto Supabase oficial (`lfmavupbxfkxuzncfzzs`).
+- [x] Detección y erradicación del hallazgo del Database Linter en `public.rls_auto_enable()` (`anon_security_definer_function_executable`).
+- [x] Desvinculación de Event Triggers y eliminación en cascada de `public.rls_auto_enable()`.
+- [x] Blindaje explícito de endpoints PostgREST / RPC (`REVOKE EXECUTE FROM PUBLIC, anon`).
+- [x] Ratificación de activación de RLS en la totalidad de las 17 tablas públicas.
+- [x] Generación de migración oficial `20261005000007_remediate_rls_auto_enable.sql` y actualización canónica en `FULL_SCHEMA_DEPLOY.sql`.
+- [x] Documentación exhaustiva en `docs/REMEDIACION_SECURITY_DEFINER_FASE_2_6_1.md`.
+
+## Fase 2.6.2 — Certificación Final Pre-Deploy de Seguridad Supabase (COMPLETADA)
+- [x] Auditoría matemática y forense exhaustiva de la totalidad de funciones en `FULL_SCHEMA_DEPLOY.sql`.
+- [x] Resolución de discrepancia de inventario: exactamente 17 funciones (16 SECURITY DEFINER con `SET search_path = public, pg_temp` + 1 SECURITY INVOKER IMMUTABLE).
+- [x] Erradicación completa de `md5` y `random()` en `FULL_SCHEMA_DEPLOY.sql`, reemplazados por SHA-256 (`digest`) y CSPRNG (`gen_random_bytes`).
+- [x] Endurecimiento estricto de `log_auth_event` con lista blanca de acciones permitidas, límite de 2KB y redacción de secretos.
+- [x] Aislamiento de `transition_draw_state_atomic` y triggers internos mediante revocación de privilegios de ejecución a clientes.
+- [x] Nueva migración cronológica `20261005000008_security_definer_hardening.sql`.
+- [x] Suite de pruebas automatizadas ampliada a **176 pruebas PASS** en 13 archivos de prueba (0 fallos).
+- [x] Estado de certificación pre-deploy: CODE VERIFIED = PASS, LOCAL VERIFIED = PASS, SQL STATIC VERIFIED = PASS, REMOTE VERIFIED = PENDING, E2E VERIFIED = PENDING.
+
 ## Fase 3 — Billetera Digital y Medios de Pago Venezolanos
 - [ ] Activación de billetera digital con ledger contable de doble entrada.
 - [ ] Integración de módulos para reporte y conciliación de Pago Móvil (C2P y P2P).
