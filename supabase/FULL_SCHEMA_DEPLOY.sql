@@ -1842,3 +1842,4 @@ EXCEPTION WHEN OTHERS THEN NULL; END $$;
 -- 6. CERTIFICACIÓN CANÓNICA AUTOMÁTICA DEL DESPLIEGUE
 -- ==============================================================================
 SELECT public.validate_chapitas_catalog_integrity();
+
