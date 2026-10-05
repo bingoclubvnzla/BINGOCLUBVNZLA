@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getFallbackModalities, fetchRecentAuditLogs } from '../lib/supabase';
-import type { GameModality, AuditLogEntry } from '../types/database';
+import { getFallbackModalities, fetchRecentAuditLogs, fetchActiveDraws, fetchUserCards } from '../lib/supabase';
+import type { GameModality, AuditLogEntry, Draw, Card } from '../types/database';
 import type { MfaFactorInfo, StepUpActionType, StepUpAuthorizationToken } from '../types/mfa';
 import {
   isMfaMandatoryForRole,
@@ -79,6 +79,37 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
   const [withdrawalAmount, setWithdrawalAmount] = useState('50.00');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [securityAuditLogs, setSecurityAuditLogs] = useState<AuditLogEntry[]>([]);
+
+  // Sorteos reales y Cartones reales desde Supabase
+  const [activeDraws, setActiveDraws] = useState<Draw[]>([]);
+  const [drawsLoading, setDrawsLoading] = useState(false);
+  const [userCards, setUserCards] = useState<Card[]>([]);
+  const [cardsLoading, setCardsLoading] = useState(false);
+
+  const loadActiveDraws = async () => {
+    setDrawsLoading(true);
+    const res = await fetchActiveDraws();
+    setActiveDraws(res.data);
+    setDrawsLoading(false);
+  };
+
+  const loadUserCards = async () => {
+    if (!user?.id) return;
+    setCardsLoading(true);
+    const res = await fetchUserCards(user.id);
+    setUserCards(res.data);
+    setCardsLoading(false);
+  };
+
+  useEffect(() => {
+    loadActiveDraws();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'cartones') {
+      loadUserCards();
+    }
+  }, [activeTab, user?.id]);
 
   const isMfaMandatory = isMfaMandatoryForRole(role);
   const canDisable = canRoleDisableMfa(role);
@@ -300,22 +331,20 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
             </div>
           </div>
 
-          {/* MÓDULO DE BILLETERA (REQUISITO: NO MOSTRAR SALDO FICTICIO) */}
+          {/* MÓDULO DE BILLETERA */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:w-80 shadow-md">
             <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span className="flex items-center gap-1.5 font-medium">
+              <span className="flex items-center gap-1.5 font-medium text-slate-300">
                 <Wallet className="h-4 w-4 text-amber-400" />
                 Billetera Digital
               </span>
-              <span className="text-[11px] text-amber-500 font-mono">Fase 1</span>
             </div>
-            {/* Mensaje obligatorio requerido por el prompt maestro */}
             <div className="mt-2 py-2 px-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300">
               <span className="text-amber-300/90 font-medium block">
-                Función financiera próximamente disponible.
+                Operaciones financieras
               </span>
-              <span className="text-[11px] text-slate-400 mt-0.5 block">
-                Recargas vía Pago Móvil y Binance Pay en Fase 3.
+              <span className="text-[11px] text-slate-400 mt-0.5 block leading-relaxed">
+                Las operaciones financieras estarán disponibles cuando la plataforma complete los requisitos operativos y regulatorios correspondientes.
               </span>
             </div>
           </div>
@@ -386,7 +415,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
           <div className="ml-auto">
             <button
               onClick={() => signOut()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-950/40 rounded-lg border border-rose-900/60 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-950/40 rounded-lg border border-rose-900/60 transition-colors cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Cerrar sesión</span>
@@ -405,89 +434,166 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                   Sorteos Programados y Salas Oficiales
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Salas autorizadas preparadas para el motor de balotas en tiempo real (Fase 2).
+                  Salas activas y transmisión en directo de sorteos oficiales.
                 </p>
               </div>
-              <span className="text-xs text-slate-400 font-mono">
-                {modalities.length} modalidades activas
-              </span>
+              <button
+                onClick={loadActiveDraws}
+                disabled={drawsLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <RefreshCw className={`h-3 w-3 ${drawsLoading ? 'animate-spin text-amber-400' : ''}`} />
+                <span>Actualizar</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {modalities.map((mod) => (
-                <div key={mod.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2">
-                      <span>Sorteo #{mod.id === 'BINGO_75' ? '101' : '102'}</span>
-                      <span className="text-amber-400">PROGRAMADO</span>
+            {activeDraws.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeDraws.map((d) => (
+                  <div key={d.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2">
+                        <span>Sorteo #{d.draw_number || d.id.slice(0, 8)}</span>
+                        <span className="text-emerald-400 font-bold">{d.status}</span>
+                      </div>
+                      <h3 className="text-base font-bold text-white font-display">
+                        {d.title || `Sorteo de ${d.modality_id}`}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Modalidad: <strong className="text-slate-200">{d.modality_id}</strong>
+                      </p>
+                      {d.scheduled_at && (
+                        <div className="mt-3 text-xs text-slate-400 flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-amber-400" />
+                          <span>{new Date(d.scheduled_at).toLocaleString()}</span>
+                        </div>
+                      )}
                     </div>
-                    <h3 className="text-base font-bold text-white font-display">
-                      {mod.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-400 line-clamp-2">
-                      {mod.description}
-                    </p>
-                    <div className="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 font-mono space-y-1">
-                      <div className="flex justify-between">
-                        <span>Matriz:</span>
-                        <span className="text-slate-200">{mod.grid_rows}x{mod.grid_cols}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Balotas:</span>
-                        <span className="text-slate-200">{mod.total_balls} números</span>
-                      </div>
+                    <div className="mt-6 pt-3 border-t border-slate-800/60">
+                      {onEnterLiveRoom && (
+                        <button
+                          onClick={() => onEnterLiveRoom(d.modality_id)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 transition-all cursor-pointer"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>Entrar a la Sala en Vivo</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="mt-6 pt-3 border-t border-slate-800/60 flex flex-col gap-2">
-                    {onEnterLiveRoom && (
-                      <button
-                        onClick={() => onEnterLiveRoom(mod.id)}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs font-semibold text-slate-200 transition-all cursor-pointer"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        <span>Entrar a Sala en Vivo (/play)</span>
-                      </button>
-                    )}
-                    <span className="text-[11px] text-slate-400 block text-center italic">
-                      Adquisición de cartones disponible al activar fase de juego.
-                    </span>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-xl mx-auto">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-slate-400 mb-3">
+                    <Calendar className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-white font-display">
+                    No hay sorteos disponibles en este momento.
+                  </h3>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Las salas y próximos sorteos oficiales se actualizarán tan pronto sean programados por los operadores.
+                  </p>
+                  <button
+                    onClick={loadActiveDraws}
+                    disabled={drawsLoading}
+                    className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${drawsLoading ? 'animate-spin text-amber-400' : ''}`} />
+                    <span>ACTUALIZAR</span>
+                  </button>
+                </div>
+
+                {/* Acceso directo a salas oficiales de cada modalidad */}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3">
+                    Salas Oficiales por Modalidad
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {modalities.map((mod) => (
+                      <div key={mod.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-bold text-white">{mod.name}</div>
+                          <div className="text-[11px] text-slate-400">{mod.grid_rows}x{mod.grid_cols} · {mod.total_balls} balotas</div>
+                        </div>
+                        {onEnterLiveRoom && (
+                          <button
+                            onClick={() => onEnterLiveRoom(mod.id)}
+                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
+                          >
+                            Entrar
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* TAB: MIS CARTONES */}
         {activeTab === 'cartones' && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-2xl mx-auto">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mb-4">
-              <Grid3X3 className="h-7 w-7" />
-            </div>
-            <h2 className="text-lg font-bold text-white font-display">
-              Cartones Digitales de Jugador
-            </h2>
-            <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-              En esta Fase 1 (Fundación y Pruebas), no hay cartones emitidos con apuestas financieras. La tabla <code className="text-amber-400 font-mono">cards</code> y la estructura de marcaje por celdas <code className="text-amber-400 font-mono">card_numbers</code> se encuentran creadas y protegidas con RLS para su emisión en Fase 2.
-            </p>
-            <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-400 font-mono">
-              <span>Estado:</span>
-              <span className="text-emerald-400 font-semibold">Esquema RLS Listo</span>
-            </div>
+          <div>
+            {userCards.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userCards.map((c) => (
+                  <div key={c.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
+                    <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2">
+                      <span>Cartón #{c.card_serial || c.id.slice(0, 8)}</span>
+                      <span className="text-amber-400 font-semibold">{c.status}</span>
+                    </div>
+                    <div className="text-xs text-slate-400 font-mono">
+                      Sorteo: {c.draw_id}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-10 text-center max-w-xl mx-auto">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-amber-400 mb-4">
+                  <Grid3X3 className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-white font-display">
+                  Todavía no tienes cartones.
+                </h3>
+                <p className="mt-2 text-xs text-slate-400">
+                  Tus cartones adquiridos para las partidas en vivo aparecerán en este panel.
+                </p>
+                <div className="mt-5 flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setActiveTab('sorteos')}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+                  >
+                    VER SALAS DISPONIBLES
+                  </button>
+                  <button
+                    onClick={loadUserCards}
+                    disabled={cardsLoading}
+                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                    title="Actualizar cartones"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${cardsLoading ? 'animate-spin text-amber-400' : ''}`} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* TAB: HISTORIAL */}
         {activeTab === 'historial' && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-2xl mx-auto">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 mb-4">
-              <History className="h-7 w-7" />
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-2xl mx-auto">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-sky-400 mb-4">
+              <History className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-bold text-white font-display">
+            <h3 className="text-base font-bold text-white font-display">
               Historial de Actividad
-            </h2>
+            </h3>
             <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-              Sin registros de apuestas previas. Su cuenta está vinculada al identificador <strong className="text-amber-400 font-mono">{publicId}</strong>. Toda participación futura quedará registrada de forma inmutable en el ledger de auditoría.
+              Cuenta vinculada al identificador <strong className="text-amber-400 font-mono">{publicId}</strong>. Toda tu participación en sorteos y operaciones autorizadas quedará registrada aquí.
             </p>
           </div>
         )}

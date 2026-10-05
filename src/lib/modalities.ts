@@ -1,0 +1,140 @@
+export interface ModalityItem {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  grid_type: string;
+  grid_rows?: number;
+  grid_cols?: number;
+  free_center: boolean;
+  ball_range_min: number;
+  ball_range_max: number;
+  total_numbers: number;
+  total_balls?: number;
+  is_active: boolean;
+  rules_summary: string;
+}
+
+export const OFFICIAL_MODALITIES: Record<string, ModalityItem> = {
+  BINGO_75: {
+    id: 'BINGO_75',
+    code: 'BINGO_75',
+    name: 'Bingo Tradicional 75 Bolas',
+    description: 'El clásico formato americano en cuadrícula 5x5 con casilla central LIBRE (FREE). 75 balotas divididas en columnas B(1-15), I(16-30), N(31-45), G(46-60), O(61-75).',
+    grid_type: '5x5',
+    grid_rows: 5,
+    grid_cols: 5,
+    free_center: true,
+    ball_range_min: 1,
+    ball_range_max: 75,
+    total_numbers: 75,
+    total_balls: 75,
+    is_active: true,
+    rules_summary: 'Gana por línea horizontal, vertical, diagonal, cuatro esquinas o cartón lleno (Bingo).',
+  },
+  BINGO_90: {
+    id: 'BINGO_90',
+    code: 'BINGO_90',
+    name: 'Bingo 90 Bolas Europeo',
+    description: 'Formato clásico de 90 balotas. Cartones estructurados en 3 filas y 9 columnas, con exactamente 5 números por fila (15 números por cartón).',
+    grid_type: '3x5',
+    grid_rows: 3,
+    grid_cols: 5,
+    free_center: false,
+    ball_range_min: 1,
+    ball_range_max: 90,
+    total_numbers: 90,
+    total_balls: 90,
+    is_active: true,
+    rules_summary: 'Premios por 1 Línea completa (5 aciertos), 2 Líneas (10 aciertos) y Bingo (15 aciertos).',
+  },
+  ANIMALITOS: {
+    id: 'ANIMALITOS',
+    code: 'ANIMALITOS',
+    name: 'Bingo Animalitos Vnzla',
+    description: 'Modalidad tradicional inspirada en la emblemática ruleta criolla de los animalitos. Cuadrícula 5x5 con centro libre y 38 figuras venezolanas.',
+    grid_type: '5x5',
+    grid_rows: 5,
+    grid_cols: 5,
+    free_center: true,
+    ball_range_min: 1,
+    ball_range_max: 38,
+    total_numbers: 38,
+    total_balls: 38,
+    is_active: true,
+    rules_summary: '38 figuras clásicas (Delfín, Ballena, Carnero, León, etc.) en matriz 5x5 con centro libre.',
+  },
+  OBJETOS: {
+    id: 'OBJETOS',
+    code: 'OBJETOS',
+    name: 'Bingo de Objetos e Iconos',
+    description: 'Modalidad visual rápida de cuadrícula 5x5 con centro libre, diseñada para identificación instantánea mediante iconos populares.',
+    grid_type: '5x5',
+    grid_rows: 5,
+    grid_cols: 5,
+    free_center: true,
+    ball_range_min: 1,
+    ball_range_max: 50,
+    total_numbers: 50,
+    total_balls: 50,
+    is_active: true,
+    rules_summary: '50 elementos cotidianos en matriz 5x5 con casilla libre.',
+  },
+  CHAPITAS: {
+    id: 'CHAPITAS',
+    code: 'CHAPITAS',
+    name: 'Bingo Chapitas Criollas',
+    description: 'Modalidad criolla venezolana compacta de 3 filas por 5 números (3x5) inspirada en las chapitas tradicionales. Sorteos ágiles optimizados para móviles.',
+    grid_type: '3x5',
+    grid_rows: 3,
+    grid_cols: 5,
+    free_center: false,
+    ball_range_min: 1,
+    ball_range_max: 60,
+    total_numbers: 60,
+    total_balls: 60,
+    is_active: true,
+    rules_summary: '15 números por cartón en formato 3x5 de alta velocidad.',
+  },
+};
+
+export const ANIMALITOS_LIST = [
+  { id: 0, name: 'Delfín', emoji: '🐬' },
+  { id: 1, name: 'Carnero', emoji: '🐏' },
+  { id: 2, name: 'Toro', emoji: '🐂' },
+  { id: 3, name: 'Ciempiés', emoji: '🐛' },
+  { id: 4, name: 'Alacrán', emoji: '🦂' },
+  { id: 5, name: 'León', emoji: '🦁' },
+  { id: 6, name: 'Rana', emoji: '🐸' },
+  { id: 7, name: 'Perico', emoji: '🦜' },
+  { id: 8, name: 'Ratón', emoji: '🐁' },
+  { id: 9, name: 'Águila', emoji: '🦅' },
+  { id: 10, name: 'Tigre', emoji: '🐅' },
+  { id: 11, name: 'Gato', emoji: '🐈' },
+  { id: 12, name: 'Caballo', emoji: '🐎' },
+  { id: 13, name: 'Mono', emoji: '🐒' },
+  { id: 14, name: 'Paloma', emoji: '🕊️' },
+  { id: 15, name: 'Zorro', emoji: '🦊' },
+  { id: 16, name: 'Oso', emoji: '🐻' },
+  { id: 17, name: 'Pavo', emoji: '🦃' },
+  { id: 18, name: 'Burro', emoji: '🫏' },
+  { id: 19, name: 'Chivo', emoji: '🐐' },
+  { id: 20, name: 'Cochino', emoji: '🐖' },
+  { id: 21, name: 'Gallo', emoji: '🐓' },
+  { id: 22, name: 'Camello', emoji: '🐪' },
+  { id: 23, name: 'Cebra', emoji: '🦓' },
+  { id: 24, name: 'Iguana', emoji: '🦎' },
+  { id: 25, name: 'Gallina', emoji: '🐔' },
+  { id: 26, name: 'Vaca', emoji: '🐄' },
+  { id: 27, name: 'Perro', emoji: '🐕' },
+  { id: 28, name: 'Zamuro', emoji: '🦅' },
+  { id: 29, name: 'Elefante', emoji: '🐘' },
+  { id: 30, name: 'Caimán', emoji: '🐊' },
+  { id: 31, name: 'Lapa', emoji: '🦔' },
+  { id: 32, name: 'Ardilla', emoji: '🐿️' },
+  { id: 33, name: 'Pescado', emoji: '🐟' },
+  { id: 34, name: 'Venado', emoji: '🦌' },
+  { id: 35, name: 'Jirafa', emoji: '🦒' },
+  { id: 36, name: 'Culebra', emoji: '🐍' },
+  { id: 37, name: 'Ballena', emoji: '🐋' },
+];

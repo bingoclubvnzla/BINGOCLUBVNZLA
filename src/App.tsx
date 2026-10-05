@@ -1,10 +1,10 @@
 // ==============================================================================
-// BINGO CLUB VNZLA ONLINE — ENRUTADOR PRINCIPAL Y APLICACIÓN
+// BINGO CLUB VNZLA ONLINE — ENRUTADOR PRINCIPAL Y APLICACIÓN OFICIAL
 // ==============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Navbar } from './components/Navbar';
+import { Navbar, type AppView } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
 import { PlayerDashboard } from './components/PlayerDashboard';
 import { OperatorDashboard } from './components/OperatorDashboard';
@@ -13,7 +13,7 @@ import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard'
 import { SupervisorDashboard } from './components/dashboard/SupervisorDashboard';
 import { LivePlayRoom } from './components/LivePlayRoom';
 import { AuthModal } from './components/AuthModal';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Lock, Loader2 } from 'lucide-react';
 import {
   createDraw,
   startDraw,
@@ -24,16 +24,109 @@ import {
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { DRAW_REALTIME_EVENTS } from './types/realtimeEvents';
 import { SupabaseDiagnosticModal } from './components/SupabaseDiagnosticModal';
-import type { ModalityCode } from './types/database';
-import type { AppView } from './components/Navbar';
 import { hasSufficientRole } from './lib/adminIdentities';
+import type { UserRole } from './types/database';
+
+function getViewPath(view: AppView): string {
+  switch (view) {
+    case 'player':
+      return '/player';
+    case 'operator':
+      return '/operator';
+    case 'supervisor':
+      return '/supervisor';
+    case 'admin':
+      return '/admin';
+    case 'super-admin':
+      return '/super-admin';
+    case 'play':
+      return '/play';
+    case 'landing':
+    default:
+      return '/';
+  }
+}
+
+function parseInitialRoute(): { view: AppView; authMode?: 'login' | 'register' } {
+  if (typeof window === 'undefined') return { view: 'landing' };
+  const path = window.location.pathname.toLowerCase();
+
+  if (path === '/player') return { view: 'player' };
+  if (path === '/operator') return { view: 'operator' };
+  if (path === '/supervisor') return { view: 'supervisor' };
+  if (path === '/admin') return { view: 'admin' };
+  if (path === '/super-admin') return { view: 'super-admin' };
+  if (path === '/play' || path.startsWith('/play/')) return { view: 'play' };
+  if (path === '/login') return { view: 'landing', authMode: 'login' };
+  if (path === '/register') return { view: 'landing', authMode: 'register' };
+
+  return { view: 'landing' };
+}
+
+function getRoleTargetView(userRole: UserRole): { view: AppView; path: string } {
+  if (userRole === 'SUPER_ADMIN') {
+    return { view: 'super-admin', path: '/super-admin' };
+  }
+  if (userRole === 'ADMIN') {
+    return { view: 'admin', path: '/admin' };
+  }
+  if (userRole === 'SUPERVISOR') {
+    return { view: 'supervisor', path: '/supervisor' };
+  }
+  if (userRole === 'OPERATOR') {
+    return { view: 'operator', path: '/operator' };
+  }
+  return { view: 'player', path: '/player' };
+}
 
 function AppContent() {
-  const { isAuthenticated, role, publicId } = useAuth();
-  const [activeView, setActiveView] = useState<AppView>('landing');
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const { isAuthenticated, role, user, isLoading } = useAuth();
+  const initial = parseInitialRoute();
+
+  const [activeView, setActiveView] = useState<AppView>(initial.view);
+  const [authModalOpen, setAuthModalOpen] = useState(Boolean(initial.authMode));
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>(initial.authMode || 'login');
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+
+  // Navegación con sincronización de historial de navegador
+  const navigateTo = useCallback((newView: AppView, customPath?: string) => {
+    setActiveView(newView);
+    if (typeof window !== 'undefined') {
+      const path = customPath || getViewPath(newView);
+      if (window.location.pathname !== path) {
+        window.history.pushState({ view: newView }, '', path);
+      }
+    }
+  }, []);
+
+  // Escuchar botón Atrás/Adelante del navegador
+  useEffect(() => {
+    const handlePopState = () => {
+      const current = parseInitialRoute();
+      setActiveView(current.view);
+      if (current.authMode) {
+        setAuthModalMode(current.authMode);
+        setAuthModalOpen(true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Manejador cuando el usuario inicia sesión exitosamente
+  const handleAuthSuccess = useCallback(() => {
+    setAuthModalOpen(false);
+    const target = getRoleTargetView(role);
+    navigateTo(target.view, target.path);
+  }, [role, navigateTo]);
+
+  // Si la ruta inicial era /player y el usuario acaba de autenticarse tras recargar (F5)
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && (activeView === 'landing' && window.location.pathname === '/player')) {
+      setActiveView('player');
+    }
+  }, [isLoading, isAuthenticated, activeView]);
 
   // Estado del sorteo en vivo autoritativo (Server Authoritative)
   const [liveDraw, setLiveDraw] = useState<AuthoritativeDraw>(() => {
@@ -41,10 +134,8 @@ function AppContent() {
       modality_id: 'BINGO_75',
       title: 'Sorteo Estelar Bingo 75 en Directo',
     });
-    // Preparar e iniciar para que la sala esté lista
     d.status = 'READY';
     const started = startDraw(d, 'ADMIN', 'system-admin', 1);
-    // Emitir 3 balotas iniciales autoritativas para que la sala comience con historial real
     const b1 = emitNextBall(started.draw, 'ADMIN', started.draw.version);
     const b2 = emitNextBall(b1.draw, 'ADMIN', b1.draw.version);
     const b3 = emitNextBall(b2.draw, 'ADMIN', b2.draw.version);
@@ -54,11 +145,21 @@ function AppContent() {
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', `/${mode}`);
+    }
+  };
+
+  const closeAuth = () => {
+    setAuthModalOpen(false);
+    if (typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.pathname === '/register')) {
+      const currentPath = getViewPath(activeView);
+      window.history.replaceState({}, '', currentPath);
+    }
   };
 
   const handleEnterLiveRoom = (modalityId?: string) => {
     if (modalityId && modalityId !== liveDraw.modality_id) {
-      // Iniciar nuevo sorteo autoritativo para la modalidad solicitada
       const newD = createDraw('ADMIN', 'system-admin', {
         modality_id: modalityId as any,
         title: `Sorteo Oficial de ${modalityId}`,
@@ -68,7 +169,7 @@ function AppContent() {
       const b1 = emitNextBall(started.draw, 'ADMIN', started.draw.version);
       setLiveDraw(b1.draw);
     }
-    setActiveView('play');
+    navigateTo('play', '/play');
   };
 
   const handleOperatorEmitNext = () => {
@@ -80,7 +181,6 @@ function AppContent() {
       const res = emitNextBall(liveDraw, role, liveDraw.version);
       setLiveDraw(res.draw);
 
-      // Difundir evento inmediatamente a todos los clientes por Supabase Realtime
       if (isSupabaseConfigured) {
         const channel = supabase.channel(`draw:${liveDraw.id}`);
         channel.send({
@@ -94,14 +194,29 @@ function AppContent() {
     }
   };
 
-  // Protección de rutas por RBAC
+  // Pantalla de carga mientras se verifica la sesión en Supabase (previene parpadeo)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-300">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-black text-sm mb-4 shadow-lg shadow-amber-500/20">
+          BCV
+        </div>
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+          <span>Iniciando sesión segura...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Protección de rutas por RBAC y autenticación
   const renderActiveView = () => {
     if (activeView === 'play') {
       const snapshot = createDrawSnapshot(liveDraw, 142, 580);
       return (
         <LivePlayRoom
           initialSnapshot={snapshot}
-          onBackToLobby={() => setActiveView(isAuthenticated ? 'player' : 'landing')}
+          onBackToLobby={() => navigateTo(isAuthenticated ? 'player' : 'landing')}
           onOperatorEmitNext={handleOperatorEmitNext}
           isOperatorOrAdmin={role !== 'PLAYER'}
         />
@@ -109,20 +224,40 @@ function AppContent() {
     }
 
     if (activeView === 'super-admin') {
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center shadow-2xl">
+              <Lock className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Inicio de Sesión Requerido</h2>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                Debes iniciar sesión con una cuenta autorizada para acceder al panel de administración.
+              </p>
+              <button
+                onClick={() => openAuth('login')}
+                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+              >
+                INICIAR SESIÓN
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       if (role !== 'SUPER_ADMIN') {
         return (
           <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
-            <div className="max-w-md rounded-xl border border-rose-500/30 bg-rose-950/20 p-6 text-center">
+            <div className="max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8 text-center shadow-2xl">
               <ShieldAlert className="h-10 w-10 text-rose-400 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-white font-display">Acceso Exclusivo SUPER_ADMIN</h2>
-              <p className="mt-2 text-xs text-slate-300">
-                Se requiere el rol de máxima jerarquía <strong className="text-rose-400">SUPER_ADMIN</strong> (identidad autoritativa server-side) para acceder al panel maestro de gobernanza, sincronización y asignación de roles. Su rol actual es <strong className="text-amber-400">{role}</strong>.
+              <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                Este panel requiere rol de máxima jerarquía <strong className="text-rose-400">SUPER_ADMIN</strong>. Tu rol actual es <strong className="text-amber-400">{role}</strong>.
               </p>
               <button
-                onClick={() => setActiveView('player')}
-                className="mt-5 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                onClick={() => navigateTo('player', '/player')}
+                className="mt-6 rounded-xl bg-slate-800 hover:bg-slate-700 px-5 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
-                Volver a mi Panel de Jugador
+                Volver a mi Cuenta
               </button>
             </div>
           </div>
@@ -132,20 +267,40 @@ function AppContent() {
     }
 
     if (activeView === 'supervisor') {
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center shadow-2xl">
+              <Lock className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Inicio de Sesión Requerido</h2>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                Debes iniciar sesión con una cuenta de supervisor autorizada.
+              </p>
+              <button
+                onClick={() => openAuth('login')}
+                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+              >
+                INICIAR SESIÓN
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       if (!hasSufficientRole(role, 'SUPERVISOR')) {
         return (
           <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
-            <div className="max-w-md rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-6 text-center">
+            <div className="max-w-md rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-8 text-center shadow-2xl">
               <ShieldAlert className="h-10 w-10 text-indigo-400 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-white font-display">Módulo de Supervisión</h2>
-              <p className="mt-2 text-xs text-slate-300">
-                Este panel requiere rol de <strong className="text-indigo-400">SUPERVISOR</strong>, <strong className="text-rose-400">ADMIN</strong> o <strong className="text-rose-400">SUPER_ADMIN</strong>. Su rol actual es <strong className="text-amber-400">{role}</strong>.
+              <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                Este panel requiere rol de <strong className="text-indigo-400">SUPERVISOR</strong>, <strong className="text-rose-400">ADMIN</strong> o <strong className="text-rose-400">SUPER_ADMIN</strong>. Tu rol actual es <strong className="text-amber-400">{role}</strong>.
               </p>
               <button
-                onClick={() => setActiveView('player')}
-                className="mt-5 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                onClick={() => navigateTo('player', '/player')}
+                className="mt-6 rounded-xl bg-slate-800 hover:bg-slate-700 px-5 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
-                Volver a mi Panel de Jugador
+                Volver a mi Cuenta
               </button>
             </div>
           </div>
@@ -155,20 +310,40 @@ function AppContent() {
     }
 
     if (activeView === 'admin') {
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center shadow-2xl">
+              <Lock className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Inicio de Sesión Requerido</h2>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                Debes iniciar sesión con una cuenta de administrador.
+              </p>
+              <button
+                onClick={() => openAuth('login')}
+                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+              >
+                INICIAR SESIÓN
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       if (!hasSufficientRole(role, 'ADMIN')) {
         return (
           <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
-            <div className="max-w-md rounded-xl border border-rose-500/30 bg-rose-950/20 p-6 text-center">
+            <div className="max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8 text-center shadow-2xl">
               <ShieldAlert className="h-10 w-10 text-rose-400 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-white font-display">Acceso Restringido (RBAC)</h2>
-              <p className="mt-2 text-xs text-slate-300">
-                Se requiere rol de ADMINISTRADOR o SUPER_ADMIN en el servidor para acceder a este módulo. Su rol actual es <strong className="text-amber-400">{role}</strong>.
+              <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                Se requiere rol de ADMINISTRADOR o SUPER_ADMIN. Tu rol actual es <strong className="text-amber-400">{role}</strong>.
               </p>
               <button
-                onClick={() => setActiveView('player')}
-                className="mt-5 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                onClick={() => navigateTo('player', '/player')}
+                className="mt-6 rounded-xl bg-slate-800 hover:bg-slate-700 px-5 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
-                Volver a mi Panel de Jugador
+                Volver a mi Cuenta
               </button>
             </div>
           </div>
@@ -178,20 +353,40 @@ function AppContent() {
     }
 
     if (activeView === 'operator') {
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center shadow-2xl">
+              <Lock className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Inicio de Sesión Requerido</h2>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                Debes iniciar sesión con una cuenta de operador autorizada.
+              </p>
+              <button
+                onClick={() => openAuth('login')}
+                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+              >
+                INICIAR SESIÓN
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       if (!hasSufficientRole(role, 'OPERATOR')) {
         return (
           <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
-            <div className="max-w-md rounded-xl border border-amber-500/30 bg-amber-950/20 p-6 text-center">
+            <div className="max-w-md rounded-2xl border border-amber-500/30 bg-amber-950/20 p-8 text-center shadow-2xl">
               <ShieldAlert className="h-10 w-10 text-amber-400 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-white font-display">Módulo de Operaciones</h2>
-              <p className="mt-2 text-xs text-slate-300">
-                Este panel es exclusivo para OPERADORES, SUPERVISORES y ADMINISTRADORES. Su rol actual es <strong className="text-amber-400">{role}</strong>.
+              <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                Este panel es exclusivo para operadores y administradores. Tu rol actual es <strong className="text-amber-400">{role}</strong>.
               </p>
               <button
-                onClick={() => setActiveView('player')}
-                className="mt-5 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                onClick={() => navigateTo('player', '/player')}
+                className="mt-6 rounded-xl bg-slate-800 hover:bg-slate-700 px-5 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
-                Volver a mi Panel de Jugador
+                Volver a mi Cuenta
               </button>
             </div>
           </div>
@@ -201,13 +396,48 @@ function AppContent() {
     }
 
     if (activeView === 'player') {
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center shadow-2xl">
+              <Lock className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-white font-display">Inicio de Sesión Requerido</h2>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                Para acceder a tu panel de jugador y consultar tus cartones, debes iniciar sesión con tu cuenta de Bingo Club Venezuela.
+              </p>
+              <div className="mt-6 flex flex-col gap-2.5">
+                <button
+                  onClick={() => openAuth('login')}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+                >
+                  INICIAR SESIÓN
+                </button>
+                <button
+                  onClick={() => openAuth('register')}
+                  className="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Crear Cuenta Nueva
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
       return <PlayerDashboard onEnterLiveRoom={handleEnterLiveRoom} />;
     }
 
     return (
       <LandingPage
         onOpenAuth={openAuth}
-        onExplorePlayer={() => setActiveView(isAuthenticated ? 'player' : 'play')}
+        onExplorePlayer={() => {
+          if (isAuthenticated) {
+            const target = getRoleTargetView(role);
+            navigateTo(target.view, target.path);
+          } else {
+            openAuth('login');
+          }
+        }}
+        onEnterLiveRoom={handleEnterLiveRoom}
       />
     );
   };
@@ -217,7 +447,7 @@ function AppContent() {
       <Navbar
         onOpenAuth={openAuth}
         activeView={activeView}
-        setActiveView={setActiveView}
+        setActiveView={(v) => navigateTo(v)}
         onOpenDiagnostic={() => setDiagnosticOpen(true)}
       />
 
@@ -227,8 +457,9 @@ function AppContent() {
 
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={closeAuth}
         initialMode={authModalMode}
+        onSuccess={handleAuthSuccess}
       />
 
       <SupabaseDiagnosticModal

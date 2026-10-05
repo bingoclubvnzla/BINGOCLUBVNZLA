@@ -34,6 +34,14 @@ export function canAccessAdmin(role: AppRole): boolean {
   return hasMinimumRole(role, 'ADMIN');
 }
 
+export function isOperatorOrHigher(role: AppRole): boolean {
+  return hasMinimumRole(role, 'OPERATOR');
+}
+
+export function isAdminOrHigher(role: AppRole): boolean {
+  return hasMinimumRole(role, 'ADMIN');
+}
+
 /**
  * Matriz de Permisos por Rol
  */
@@ -178,6 +186,34 @@ export function isValidPublicId(publicId: string): boolean {
   return bcvRegex.test(publicId);
 }
 
+export function validatePublicPlayerId(publicId: string): boolean {
+  return /^BCV-[0-9A-Z]{6}$/.test(publicId);
+}
+
+export interface PhoneValidationResult {
+  isValid: boolean;
+  normalized?: string;
+  error?: string;
+}
+
+export function validateVenezuelanPhone(phone: string): PhoneValidationResult {
+  if (!phone) {
+    return { isValid: false, error: 'El número de teléfono es requerido.' };
+  }
+  const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+  const match = cleaned.match(/^(?:\+58|0)?(412|414|424|416|426)(\d{7})$/);
+  if (!match) {
+    return {
+      isValid: false,
+      error: 'Formato inválido. Debe ser una operadora venezolana válida (0412, 0414, 0424, 0416, 0426) con 7 dígitos.',
+    };
+  }
+  return {
+    isValid: true,
+    normalized: `+58${match[1]}${match[2]}`,
+  };
+}
+
 /**
  * Máquina de estados finita de Sorteos (Draws)
  * Valida transiciones permitidas según el documento de arquitectura
@@ -227,12 +263,27 @@ export function validatePasswordStrength(password: string): PasswordValidationRe
   else errors.push('Debe incluir al menos un número.');
 
   if (/[^A-Za-z0-9]/.test(password)) score++;
+  else errors.push('Debe incluir al menos un carácter especial.');
 
   return {
     isValid: errors.length === 0,
     score: Math.min(score, 4),
     errors,
   };
+}
+
+/**
+ * Sanitiza y formatea mensajes de error para no exponer detalles de base de datos o secretos
+ */
+export function formatSafeErrorMessage(error: unknown): string {
+  const msg = error instanceof Error ? error.message : String(error);
+  if (/syntax error|pg_catalog|select|relation|foreign key|constraint/i.test(msg)) {
+    return 'Error en la base de datos. Operación registrada para auditoría.';
+  }
+  if (/jwt|signature|token|bearer|unauthorized/i.test(msg)) {
+    return 'Su sesión ha expirado o las credenciales no son válidas. Por favor vuelva a iniciar sesión.';
+  }
+  return msg;
 }
 
 /**

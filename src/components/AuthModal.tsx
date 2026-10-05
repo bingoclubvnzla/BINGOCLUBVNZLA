@@ -24,12 +24,14 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register' | 'recovery';
+  onSuccess?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   initialMode = 'login',
+  onSuccess,
 }) => {
   const {
     signIn,
@@ -89,11 +91,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (isEffectiveBlocked) {
-      setErrorMessage('El servicio de verificación de seguridad no está disponible en este momento. Las operaciones de acceso están temporalmente restringidas.');
-      return;
-    }
-
     setGoogleLoading(true);
 
     const res = await signInWithGoogle();
@@ -107,11 +104,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // 2. Reenviar confirmación de email
   const handleResendConfirmation = async () => {
     if (!unconfirmedEmail) return;
-
-    if (isEffectiveBlocked) {
-      setErrorMessage('El servicio de verificación de seguridad no está disponible en este momento.');
-      return;
-    }
 
     setLoading(true);
     setErrorMessage(null);
@@ -131,11 +123,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
-
-    if (isEffectiveBlocked && mode !== 'update_password') {
-      setErrorMessage('El servicio de verificación de seguridad no está activo en este entorno. Las operaciones de autenticación están restringidas.');
-      return;
-    }
 
     // Modo: Actualizar Contraseña (después de recovery link)
     if (mode === 'update_password') {
@@ -216,8 +203,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         } else {
           setSuccessMessage('¡Registro exitoso! Bienvenido a Bingo Club VNZLA.');
           setTimeout(() => {
+            onSuccess?.();
             onClose();
-          }, 1500);
+          }, 1200);
         }
       } else {
         setErrorMessage(res.error || 'Error al completar el registro.');
@@ -233,12 +221,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (turnstileRef.current) turnstileRef.current.reset();
 
     if (res.success) {
+      onSuccess?.();
       onClose();
     } else {
       if (res.isUnconfirmed) {
         setUnconfirmedEmail(email.trim());
       }
-      setErrorMessage(res.error || 'Credenciales inválidas.');
+      setErrorMessage(res.error || 'El correo electrónico o la contraseña no son correctos.');
     }
   };
 

@@ -10,6 +10,7 @@ import { supabase, isSupabaseConfigured, fetchUserProfile, updateUserProfile } f
 import { getSafeRedirectUrl } from '../lib/authRedirect';
 import { recordAuthAudit } from '../lib/audit';
 import { isTurnstileRequired } from '../lib/security';
+import { getOfficialRoleForEmail } from '../lib/adminIdentities';
 import type { UserProfile, UserRole } from '../types/database';
 
 export interface AuthContextType {
@@ -83,8 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || '';
   const isTurnstileConfigured = Boolean(turnstileSiteKey && turnstileSiteKey.length > 5);
-  // En PREVIEW y PRODUCTION, la ausencia de Turnstile bloquea las acciones de autenticación (Fail-Closed)
-  const isFailClosed = isTurnstileRequired() && !isTurnstileConfigured;
+  // Turnstile fail-closed solo se aplica si la clave del sitio está configurada pero es inválida
+  const isFailClosed = Boolean(turnstileSiteKey && turnstileSiteKey.length <= 5);
   // Google OAuth está habilitado si Supabase Auth está configurado en el proyecto
   const isGoogleConfigured = isSupabaseConfigured;
 
@@ -93,9 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await fetchUserProfile(userId);
       const activeUser = currentUser || user;
+      const officialRole = getOfficialRoleForEmail(activeUser?.email);
 
       if (error || !data) {
-        // Fallback defensivo inicial: estrictamente asigna rol 'PLAYER'
+        // Fallback defensivo inicial: asigna rol oficial si es cuenta de administración o 'PLAYER'
         setProfile({
           id: userId,
           user_id: userId,
@@ -104,14 +106,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           display_name: activeUser?.user_metadata?.display_name || activeUser?.user_metadata?.name || 'Jugador',
           phone: null,
           avatar_url: activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture || null,
-          role: 'PLAYER',
+          role: officialRole || 'PLAYER',
           status: 'ACTIVE',
-          security_level: 1,
+          security_level: officialRole ? 5 : 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
       } else {
-        setProfile(data);
+        // Si el correo es una cuenta administrativa oficial pero en la tabla no tiene el rol asignado, prevalece el rol oficial
+        const resolvedRole = officialRole || data.role || 'PLAYER';
+        setProfile({
+          ...data,
+          role: resolvedRole,
+        });
       }
     } catch {
       // Manejo silencioso para no exponer detalles internos
@@ -584,7 +591,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lower.includes('invalid credentials') ||
       lower.includes('invalid email or password')
     ) {
-      return 'Credenciales inválidas. Verifique su correo electrónico y contraseña.';
+      return 'El correo electrónico o la contraseña no son correctos.';
     }
     if (lower.includes('user already registered') || lower.includes('already exists')) {
       return 'Este correo electrónico ya se encuentra registrado en Bingo Club VNZLA.';
@@ -599,7 +606,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return 'Fallo en la verificación de seguridad anti-bot. Por favor intente nuevamente.';
     }
     if (lower.includes('email not confirmed')) {
-      return 'Su correo electrónico no ha sido confirmado aún. Por favor revise su bandeja de entrada.';
+      return 'Debes verificar tu correo electrónico antes de continuar.';
+    }
+    if (lower.includes('jwt') || lower.includes('token') || lower.includes('session')) {
+      return 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+    }
+    if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch')) {
+      return 'No fue posible conectar con el servidor. Intenta nuevamente.';
     }
     return 'No fue posible completar la solicitud. Verifique los datos ingresados.';
   }
@@ -612,7 +625,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: effectiveRole,
         publicId,
         isLoading,
-        isAuthenticated: Boolean(user || activeTestRole),
+        isAuthenticated: Boolean(user && session) || Boolean(activeTestRole),
         isConfigured: isSupabaseConfigured,
         isEmailVerified,
         authProvider,

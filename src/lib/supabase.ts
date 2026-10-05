@@ -23,8 +23,34 @@ export interface SupabaseHealthReport {
   schemaReady: boolean;
 }
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const rawAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+const defaultProductionUrl = 'https://lfmavupbxfkxuzncfzzs.supabase.co';
+
+const getStoredCredentials = () => {
+  if (typeof window === 'undefined') return { url: '', key: '' };
+  try {
+    const url = localStorage.getItem('BCV_SUPABASE_URL') || '';
+    const key =
+      localStorage.getItem('BCV_SUPABASE_KEY') ||
+      localStorage.getItem('BCV_SUPABASE_ANON_KEY') ||
+      '';
+    return { url, key };
+  } catch {
+    return { url: '', key: '' };
+  }
+};
+
+const stored = getStoredCredentials();
+
+const rawUrl =
+  import.meta.env.VITE_SUPABASE_URL ||
+  stored.url ||
+  defaultProductionUrl;
+
+const rawAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  stored.key ||
+  '';
 
 // Validación estricta: Sin inventar valores ni aceptar cadenas placeholder
 export const isSupabaseConfigured = Boolean(
@@ -39,10 +65,10 @@ export const isSupabaseConfigured = Boolean(
 export const supabaseUrl = isSupabaseConfigured ? rawUrl : '';
 export const supabaseAnonKey = isSupabaseConfigured ? rawAnonKey : '';
 
-// Inicializar cliente oficial de Supabase exclusivamente cuando la configuración es válida
+// Inicializar cliente oficial de Supabase
 export const supabase: SupabaseClient = createClient(
-  isSupabaseConfigured ? supabaseUrl : 'https://unconfigured.supabase.co',
-  isSupabaseConfigured ? supabaseAnonKey : 'unconfigured-key',
+  isSupabaseConfigured ? rawUrl : 'https://unconfigured.supabase.co',
+  isSupabaseConfigured ? rawAnonKey : 'unconfigured-key',
   {
     auth: {
       persistSession: true,
@@ -353,11 +379,94 @@ export function getFriendlyAuthErrorMessage(error: any): string {
   return msg || 'Error en la operación de autenticación.';
 }
 
-export function setCustomSupabaseCredentials(_url: string, _key: string): boolean {
+// ==============================================================================
+// SERVICIOS DE SORTEOS Y SALAS EN VIVO (REAL DATA)
+// ==============================================================================
+
+export async function fetchActiveDraws(): Promise<{ data: Draw[]; error: string | null }> {
+  if (!isSupabaseConfigured) {
+    return { data: [], error: null };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('draws')
+      .select('*')
+      .in('status', ['READY', 'ACTIVE', 'SCHEDULED'])
+      .order('scheduled_at', { ascending: false });
+
+    if (error) {
+      return { data: [], error: error.message };
+    }
+    return { data: (data as Draw[]) || [], error: null };
+  } catch (err: any) {
+    return { data: [], error: err.message || 'Error al consultar sorteos' };
+  }
+}
+
+export async function fetchActiveGameRooms(): Promise<{ data: any[]; error: string | null }> {
+  if (!isSupabaseConfigured) {
+    return { data: [], error: null };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('game_rooms')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      return { data: [], error: error.message };
+    }
+    return { data: data || [], error: null };
+  } catch (err: any) {
+    return { data: [], error: err.message || 'Error al consultar salas' };
+  }
+}
+
+export async function fetchUserCards(userId: string): Promise<{ data: Card[]; error: string | null }> {
+  if (!isSupabaseConfigured || !userId) {
+    return { data: [], error: null };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('cards')
+      .select('*, card_numbers(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return { data: [], error: error.message };
+    }
+    return { data: (data as Card[]) || [], error: null };
+  } catch (err: any) {
+    return { data: [], error: err.message || 'Error al consultar cartones' };
+  }
+}
+
+export function setCustomSupabaseCredentials(url: string, key: string): boolean {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('BCV_SUPABASE_URL', url.trim());
+      localStorage.setItem('BCV_SUPABASE_KEY', key.trim());
+      return true;
+    } catch {
+      return false;
+    }
+  }
   return false;
 }
 
 export function clearCustomSupabaseCredentials(): boolean {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('BCV_SUPABASE_URL');
+      localStorage.removeItem('BCV_SUPABASE_KEY');
+      localStorage.removeItem('BCV_SUPABASE_ANON_KEY');
+      return true;
+    } catch {
+      return false;
+    }
+  }
   return false;
 }
 

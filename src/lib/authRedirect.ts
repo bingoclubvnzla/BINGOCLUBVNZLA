@@ -11,6 +11,7 @@
 const DEFAULT_ALLOWED_ORIGINS: string[] = [
   'https://bingoclub.com.ve',
   'https://www.bingoclub.com.ve',
+  'https://bingoclubvnzla.vercel.app',
 ];
 
 /**
