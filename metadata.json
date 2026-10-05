@@ -1,0 +1,6 @@
+{
+  "name": "Bingo Club Venezuela Online",
+  "description": "Plataforma profesional de bingo digital en tiempo real para Venezuela. Fase 2.5: Activación real, Google OAuth, Cloudflare Turnstile fail-closed, RLS, RBAC y servidor autoritativo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
