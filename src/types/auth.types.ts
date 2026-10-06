@@ -30,3 +30,32 @@ export interface UpdateProfileDTO {
   fullName?: string;
   phone?: string;
 }
+
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  PLAYER: 1,
+  OPERATOR: 2,
+  SUPERVISOR: 3,
+  ADMIN: 4,
+  SUPER_ADMIN: 5,
+};
+
+export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+}
+
+export function canManageUsers(role: UserRole): boolean {
+  return role === 'ADMIN' || role === 'SUPER_ADMIN';
+}
+
+export function canOperateDraws(role: UserRole): boolean {
+  return ['OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canSuperviseOperations(role: UserRole): boolean {
+  return ['SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canAuditSystem(role: UserRole): boolean {
+  return ['SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+

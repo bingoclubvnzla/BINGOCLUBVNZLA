@@ -142,6 +142,58 @@ function AppContent() {
     return b3.draw;
   });
 
+  // Recuperación F5 / Reanudación de Sorteo Activo desde PostgreSQL (P3-01 Fix)
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    let isMounted = true;
+    async function recoverActiveDrawFromDB() {
+      try {
+        const { data, error } = await supabase
+          .from('draws')
+          .select('*')
+          .in('status', ['ACTIVE', 'READY', 'PAUSED'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (!error && data && data.length > 0 && isMounted) {
+          const dbDraw = data[0];
+          setLiveDraw((prev) => {
+            // Reconciliar versión: sincronizar si la base de datos tiene sorteo activo o versión superior
+            if (dbDraw.version >= prev.version || prev.id !== dbDraw.id) {
+              return {
+                id: dbDraw.id,
+                public_code: dbDraw.public_code || `BCV-S${dbDraw.draw_number}`,
+                room_id: dbDraw.room_id,
+                modality_id: dbDraw.modality_id,
+                title: dbDraw.title,
+                status: dbDraw.status,
+                version: dbDraw.version || 1,
+                total_balls: dbDraw.metadata?.total_balls || 75,
+                sequence: dbDraw.permutation || [],
+                current_sequence: dbDraw.current_sequence || (dbDraw.drawn_numbers?.length || 0),
+                drawn_numbers: dbDraw.drawn_numbers || [],
+                created_at: dbDraw.created_at,
+                created_by: dbDraw.metadata?.created_by || 'system',
+                updated_at: dbDraw.updated_at || dbDraw.created_at,
+                last_event_hash: `hash_${dbDraw.id}_${dbDraw.version || 1}`,
+              };
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.warn('Sincronización de sorteo DB en segundo plano:', err);
+      }
+    }
+
+    recoverActiveDrawFromDB();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeView]);
+
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
     setAuthModalOpen(true);

@@ -34,7 +34,8 @@ export type TransactionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED
 export interface Profile {
   id: string;
   user_id: string;
-  public_id: string; // Formato BCV-XXXXXX
+  public_id?: string; // Formato BCV-XXXXXX
+  public_code?: string; // Alias de compatibilidad
   display_name: string;
   full_name: string | null;
   phone: string | null;
@@ -45,6 +46,8 @@ export interface Profile {
   created_at: string;
   updated_at: string;
 }
+
+export type ProfileRow = Profile;
 
 export interface GameModality {
   id: string;
@@ -130,6 +133,8 @@ export interface WalletTransaction {
   metadata: Record<string, unknown>;
   created_at: string;
 }
+
+export type WalletTransactionRow = WalletTransaction;
 
 export interface AuditLog {
   id: string;
