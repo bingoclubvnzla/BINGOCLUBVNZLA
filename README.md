@@ -1,7 +1,17 @@
 # Bingo Club VNZLA Online
 
 > **Bingo digital venezolano en tiempo real**  
-> *Fase 1 — Fundación Profesional, Segura y Real*
+> *Fase Final — Validación Remota, Turnstile y Certificación E2E*  
+> **Estado:** 🟡 PRODUCCIÓN FUNCIONAL — PRE-CERTIFICADA (374/374 Vitest PASS, 7/7 Playwright PASS)
+
+---
+
+## 📊 Estado de Certificación y Auditoría
+- **Informe Forense de Cierre:** [`docs/CERTIFICACION_FASE_FINAL_CIERRE.md`](docs/CERTIFICACION_FASE_FINAL_CIERRE.md)
+- **Script Consolidado de Despliegue SQL:** [`supabase/PHASE_FINAL_MIGRATION_DEPLOY.sql`](supabase/PHASE_FINAL_MIGRATION_DEPLOY.sql)
+- **Suite de Pruebas Unitarias:** 374/374 tests pasando en Vitest (35 archivos)
+- **Suite de Pruebas E2E:** 7/7 tests pasando en Playwright Chromium
+- **Auditoría Remota de Sondas:** `node scripts/verify-phase-final-remote.mjs`
 
 ---
 
