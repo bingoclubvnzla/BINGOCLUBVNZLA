@@ -1,24 +1,35 @@
 // ==============================================================================
-// BINGO CLUB VNZLA ONLINE — COMPONENTE CLOUDFLARE TURNSTILE (FASE 2.4)
+// BINGO CLUB VNZLA ONLINE — COMPONENTE CLOUDFLARE TURNSTILE (FASE 2.4 / FASE FINAL)
 // Protección anti-bot real con integración nativa Supabase Auth.
-// Maneja estados: CONFIGURED (Widget Real) y NOT_CONFIGURED (Aviso Informativo).
+// Ciclo de vida estable, idempotente y máquina de estados formal:
+// NO_VERIFICADO | VERIFICANDO | VERIFICADO | EXPIRADO | ERROR
 // ==============================================================================
 
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { ShieldCheck, ShieldAlert, CheckCircle2, RefreshCw } from 'lucide-react';
-import { isTurnstileRequired, getAppEnvironment } from '../lib/security';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { ShieldCheck, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, XCircle } from 'lucide-react';
+import { isTurnstileRequired } from '../lib/security';
+
+export type TurnstileStatus =
+  | 'NO_VERIFICADO'
+  | 'VERIFICANDO'
+  | 'VERIFICADO'
+  | 'EXPIRADO'
+  | 'ERROR';
 
 export interface TurnstileRef {
   reset: () => void;
   getToken: () => string | null;
+  getStatus: () => TurnstileStatus;
+  isVerified: () => boolean;
   isFailClosed: () => boolean;
 }
 
-interface CloudflareTurnstileProps {
+export interface CloudflareTurnstileProps {
   onVerify: (token: string) => void;
   onExpire?: () => void;
   onError?: (error: string) => void;
   onStatusChange?: (isBlocked: boolean) => void;
+  onVerificationChange?: (status: TurnstileStatus, token: string | null) => void;
   action?: 'login' | 'signup' | 'recovery' | 'resend';
 }
 
@@ -43,12 +54,36 @@ declare global {
 }
 
 export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileProps>(
-  ({ onVerify, onExpire, onError, onStatusChange, action = 'login' }, ref) => {
+  (
+    {
+      onVerify,
+      onExpire,
+      onError,
+      onStatusChange,
+      onVerificationChange,
+      action = 'login',
+    },
+    ref
+  ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
+    const isRenderingRef = useRef(false);
+
+    // Callbacks estabilizados mediante refs para evitar ciclos y re-renderizados del widget
+    const onVerifyRef = useRef(onVerify);
+    onVerifyRef.current = onVerify;
+    const onExpireRef = useRef(onExpire);
+    onExpireRef.current = onExpire;
+    const onErrorRef = useRef(onError);
+    onErrorRef.current = onError;
+    const onStatusChangeRef = useRef(onStatusChange);
+    onStatusChangeRef.current = onStatusChange;
+    const onVerificationChangeRef = useRef(onVerificationChange);
+    onVerificationChangeRef.current = onVerificationChange;
+
     const [token, setToken] = useState<string | null>(null);
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [status, setStatus] = useState<'IDLE' | 'VERIFIED' | 'EXPIRED' | 'ERROR'>('IDLE');
+    const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+    const [status, setStatus] = useState<TurnstileStatus>('NO_VERIFICADO');
 
     // Clave de sitio pública de Turnstile oficial o variable de entorno
     const defaultTurnstileSiteKey = '0x4AAAAAAFOjgftMybjD3w5c';
@@ -58,35 +93,49 @@ export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileP
     // En PREVIEW y PRODUCTION, Turnstile es estrictamente requerido (Fail-Closed)
     const failClosed = isTurnstileRequired() && !isConfigured;
 
+    // Notificar si está bloqueado por Fail-Closed
     useEffect(() => {
-      if (onStatusChange) {
-        onStatusChange(failClosed);
+      if (onStatusChangeRef.current) {
+        onStatusChangeRef.current(failClosed);
       }
-    }, [failClosed, onStatusChange]);
+    }, [failClosed]);
 
-    // Exponer reset, getToken y isFailClosed mediante useImperativeHandle
-    useImperativeHandle(ref, () => ({
-      reset: () => {
-        setToken(null);
-        setStatus('IDLE');
-        if (window.turnstile && widgetIdRef.current) {
-          try {
-            window.turnstile.reset(widgetIdRef.current);
-          } catch {
-            // Widget reset seguro
-          }
+    // Función de reseteo estable
+    const reset = useCallback(() => {
+      setToken(null);
+      setStatus('VERIFICANDO');
+      onStatusChangeRef.current?.(true);
+      onVerificationChangeRef.current?.('VERIFICANDO', null);
+
+      if (window.turnstile && widgetIdRef.current) {
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+        } catch {
+          // Fallback seguro si el widget ya fue destruido
         }
-      },
-      getToken: () => token,
-      isFailClosed: () => failClosed,
-    }));
+      }
+    }, []);
 
-    // Carga asíncrona del script oficial de Cloudflare Turnstile
+    // Exponer métodos imperativos estables
+    useImperativeHandle(ref, () => ({
+      reset,
+      getToken: () => token,
+      getStatus: () => status,
+      isVerified: () => status === 'VERIFICADO' && Boolean(token),
+      isFailClosed: () => failClosed,
+    }), [reset, token, status, failClosed]);
+
+    // 1. Carga única y asíncrona del script oficial de Cloudflare Turnstile
     useEffect(() => {
       if (!isConfigured) return;
 
       const scriptId = 'cloudflare-turnstile-script';
       let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+      if (window.turnstile) {
+        setIsScriptLoaded(true);
+        return;
+      }
 
       if (!script) {
         script = document.createElement('script');
@@ -94,31 +143,32 @@ export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileP
         script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
         script.async = true;
         script.defer = true;
-        script.onload = () => setIsLoaded(true);
+        script.onload = () => setIsScriptLoaded(true);
         script.onerror = () => {
           setStatus('ERROR');
-          if (onError) onError('No se pudo cargar el script de Cloudflare Turnstile.');
+          onErrorRef.current?.('No se pudo cargar el script de Cloudflare Turnstile.');
+          onStatusChangeRef.current?.(true);
+          onVerificationChangeRef.current?.('ERROR', null);
         };
         document.head.appendChild(script);
-      } else if (window.turnstile) {
-        setIsLoaded(true);
       } else {
-        script.addEventListener('load', () => setIsLoaded(true));
+        const handleScriptLoad = () => setIsScriptLoaded(true);
+        script.addEventListener('load', handleScriptLoad);
+        return () => {
+          script?.removeEventListener('load', handleScriptLoad);
+        };
       }
-    }, [isConfigured, onError]);
+    }, [isConfigured]);
 
-    // Renderizar el widget cuando el script y el contenedor estén listos
+    // 2. Renderizar el widget Turnstile EXACTAMENTE UNA VEZ por montaje de contenedor
     useEffect(() => {
-      if (!isConfigured || !isLoaded || !containerRef.current || !window.turnstile) return;
+      if (!isConfigured || !isScriptLoaded || !containerRef.current || !window.turnstile) return;
+      if (widgetIdRef.current || isRenderingRef.current) return;
 
-      // Limpiar render previos en el mismo contenedor
-      if (widgetIdRef.current) {
-        try {
-          window.turnstile.remove(widgetIdRef.current);
-        } catch {
-          // Ignorar error de limpieza
-        }
-      }
+      isRenderingRef.current = true;
+      setStatus('VERIFICANDO');
+      onStatusChangeRef.current?.(true);
+      onVerificationChangeRef.current?.('VERIFICANDO', null);
 
       try {
         const id = window.turnstile.render(containerRef.current, {
@@ -126,25 +176,43 @@ export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileP
           action,
           theme: 'dark',
           callback: (receivedToken: string) => {
+            if (!receivedToken || !receivedToken.trim()) {
+              setToken(null);
+              setStatus('ERROR');
+              onStatusChangeRef.current?.(true);
+              onVerificationChangeRef.current?.('ERROR', null);
+              return;
+            }
             setToken(receivedToken);
-            setStatus('VERIFIED');
-            onVerify(receivedToken);
+            setStatus('VERIFICADO');
+            onVerifyRef.current?.(receivedToken);
+            onStatusChangeRef.current?.(false);
+            onVerificationChangeRef.current?.('VERIFICADO', receivedToken);
           },
           'expired-callback': () => {
             setToken(null);
-            setStatus('EXPIRED');
-            if (onExpire) onExpire();
+            setStatus('EXPIRADO');
+            onExpireRef.current?.();
+            onStatusChangeRef.current?.(true);
+            onVerificationChangeRef.current?.('EXPIRADO', null);
           },
           'error-callback': (err: string) => {
             setToken(null);
             setStatus('ERROR');
-            if (onError) onError(err || 'Error en validación Cloudflare Turnstile.');
+            onErrorRef.current?.(err || 'Error en validación Cloudflare Turnstile.');
+            onStatusChangeRef.current?.(true);
+            onVerificationChangeRef.current?.('ERROR', null);
           },
         });
+
         widgetIdRef.current = id;
       } catch (e: unknown) {
         setStatus('ERROR');
-        if (onError) onError('Fallo al inicializar widget Turnstile.');
+        onErrorRef.current?.('Fallo al inicializar widget Turnstile.');
+        onStatusChangeRef.current?.(true);
+        onVerificationChangeRef.current?.('ERROR', null);
+      } finally {
+        isRenderingRef.current = false;
       }
 
       return () => {
@@ -152,28 +220,90 @@ export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileP
           try {
             window.turnstile.remove(widgetIdRef.current);
           } catch {
-            // Cleanup seguro
+            // Cleanup defensivo
           }
+          widgetIdRef.current = null;
         }
       };
-    }, [isConfigured, isLoaded, siteKey, action, onVerify, onExpire, onError]);
+    }, [isConfigured, isScriptLoaded, siteKey, action]);
 
     // CASO 1: Turnstile Real Configurado (Widget Oficial)
     if (isConfigured) {
       return (
-        <div className="my-3 flex flex-col items-center justify-center">
-          <div ref={containerRef} className="min-h-[65px] flex items-center justify-center" />
-          {status === 'VERIFIED' && (
-            <p className="mt-1 text-[11px] text-emerald-400 flex items-center gap-1">
+        <div className="my-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+              <ShieldCheck className="h-4 w-4 text-sky-400 shrink-0" />
+              <span>Verificación Humana Cloudflare Turnstile</span>
+            </div>
+
+            {status === 'VERIFICADO' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                <CheckCircle2 className="h-3 w-3" />
+                VERIFICADO
+              </span>
+            )}
+            {status === 'VERIFICANDO' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-[10px] font-bold border border-sky-500/20">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                VERIFICANDO
+              </span>
+            )}
+            {status === 'NO_VERIFICADO' && (
+              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] font-bold">
+                NO VERIFICADO
+              </span>
+            )}
+            {status === 'EXPIRADO' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-bold border border-amber-500/20">
+                <AlertTriangle className="h-3 w-3" />
+                EXPIRADO
+              </span>
+            )}
+            {status === 'ERROR' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[10px] font-bold border border-rose-500/20">
+                <XCircle className="h-3 w-3" />
+                ERROR
+              </span>
+            )}
+          </div>
+
+          <div
+            ref={containerRef}
+            className="min-h-[65px] flex items-center justify-center my-1 rounded bg-slate-900/40"
+          />
+
+          {status === 'VERIFICADO' && (
+            <p className="mt-1.5 text-[11px] text-emerald-400/90 flex items-center justify-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
-              <span>Verificación de seguridad Turnstile exitosa</span>
+              <span>Verificación de seguridad Turnstile exitosa. Métodos habilitados.</span>
             </p>
           )}
-          {status === 'EXPIRED' && (
-            <p className="mt-1 text-[11px] text-amber-400 flex items-center gap-1">
-              <RefreshCw className="h-3 w-3 animate-spin" />
-              <span>Verificación expirada. Generando nuevo token...</span>
-            </p>
+
+          {status === 'EXPIRADO' && (
+            <div className="mt-2 flex items-center justify-between text-xs text-amber-300 bg-amber-950/30 p-2 rounded border border-amber-800/40">
+              <span className="text-[11px]">La verificación ha expirado.</span>
+              <button
+                type="button"
+                onClick={reset}
+                className="text-[11px] text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
+              >
+                Reintentar desafío
+              </button>
+            </div>
+          )}
+
+          {status === 'ERROR' && (
+            <div className="mt-2 flex items-center justify-between text-xs text-rose-300 bg-rose-950/30 p-2 rounded border border-rose-800/40">
+              <span className="text-[11px]">No se pudo completar la verificación anti-bot.</span>
+              <button
+                type="button"
+                onClick={reset}
+                className="text-[11px] text-rose-400 hover:text-rose-300 font-bold underline cursor-pointer"
+              >
+                Reintentar
+              </button>
+            </div>
           )}
         </div>
       );
@@ -220,3 +350,4 @@ export const CloudflareTurnstile = forwardRef<TurnstileRef, CloudflareTurnstileP
 );
 
 CloudflareTurnstile.displayName = 'CloudflareTurnstile';
+

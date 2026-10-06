@@ -40,7 +40,7 @@ export interface AuthContextType {
     password: string,
     captchaToken?: string
   ) => Promise<{ success: boolean; error?: string; isUnconfirmed?: boolean }>;
-  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: (captchaToken?: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (
     email: string,
@@ -379,7 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 3. CONTINUAR CON GOOGLE (GOOGLE OAUTH VÍA SUPABASE AUTH)
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (captchaToken?: string) => {
     setAuthError(null);
     if (!isSupabaseConfigured) {
       return {
@@ -395,18 +395,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
+    if (isTurnstileConfigured && isTurnstileRequired() && (!captchaToken || !captchaToken.trim())) {
+      return {
+        success: false,
+        error: 'Debe completar la verificación de seguridad anti-bot antes de continuar con Google.',
+      };
+    }
+
     try {
       const redirectUrl = getSafeRedirectUrl();
 
+      const optionsPayload: {
+        redirectTo: string;
+        queryParams: { access_type: string; prompt: string };
+        captchaToken?: string;
+      } = {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
+      };
+
+      if (captchaToken) {
+        optionsPayload.captchaToken = captchaToken;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
-          },
-        },
+        options: optionsPayload,
       });
 
       if (error) {

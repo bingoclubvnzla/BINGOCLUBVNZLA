@@ -3,9 +3,9 @@
 // Google OAuth + Correo/Contraseña + Cloudflare Turnstile + Verificación de Email
 // ==============================================================================
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { CloudflareTurnstile, TurnstileRef } from './CloudflareTurnstile';
+import { CloudflareTurnstile, TurnstileRef, TurnstileStatus } from './CloudflareTurnstile';
 import {
   X,
   Lock,
@@ -59,41 +59,65 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileStatus, setTurnstileStatus] = useState<TurnstileStatus>('NO_VERIFICADO');
   const [turnstileBlocked, setTurnstileBlocked] = useState(false);
 
-  const isEffectiveBlocked = isFailClosed || turnstileBlocked;
+  // Verificación humana estricta:
+  const isTurnstileVerified = turnstileStatus === 'VERIFICADO' && Boolean(turnstileToken);
+  const isEffectiveBlocked = isFailClosed || turnstileBlocked || !isTurnstileVerified;
 
   const turnstileRef = useRef<TurnstileRef>(null);
-
-  if (!isOpen) return null;
 
   const resetFormState = () => {
     setErrorMessage(null);
     setSuccessMessage(null);
     setUnconfirmedEmail(null);
+  };
+
+  const handleClose = () => {
+    resetFormState();
     setTurnstileToken(null);
+    setTurnstileStatus('NO_VERIFICADO');
     if (turnstileRef.current) {
       turnstileRef.current.reset();
     }
+    onClose();
   };
 
-  const handleTurnstileVerify = (token: string) => {
+  const handleTurnstileVerify = useCallback((token: string) => {
     setTurnstileToken(token);
+    setTurnstileStatus('VERIFICADO');
     setErrorMessage(null);
-  };
+  }, []);
 
-  const handleTurnstileExpire = () => {
+  const handleTurnstileExpire = useCallback(() => {
     setTurnstileToken(null);
-  };
+    setTurnstileStatus('EXPIRADO');
+    setErrorMessage('La verificación anti-bot ha expirado. Por favor resuelva el desafío nuevamente.');
+  }, []);
 
-  // 1. Google OAuth
+  const handleTurnstileError = useCallback((_err: string) => {
+    setTurnstileToken(null);
+    setTurnstileStatus('ERROR');
+  }, []);
+
+  const handleTurnstileVerificationChange = useCallback((status: TurnstileStatus, token: string | null) => {
+    setTurnstileStatus(status);
+    setTurnstileToken(token);
+  }, []);
+
+  // 1. Google OAuth (Estrictamente protegido por Turnstile)
   const handleGoogleSignIn = async () => {
+    if (!isTurnstileVerified || !turnstileToken) {
+      setErrorMessage('Debe completar la verificación de seguridad anti-bot antes de continuar con Google.');
+      return;
+    }
+
     setErrorMessage(null);
     setSuccessMessage(null);
-
     setGoogleLoading(true);
 
-    const res = await signInWithGoogle();
+    const res = await signInWithGoogle(turnstileToken);
     setGoogleLoading(false);
 
     if (!res.success) {
@@ -112,7 +136,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     if (res.success) {
       setSuccessMessage('Se ha enviado un nuevo enlace de confirmación a tu correo.');
-      if (turnstileRef.current) turnstileRef.current.reset();
     } else {
       setErrorMessage(res.error || 'No se pudo reenviar el enlace.');
     }
@@ -150,6 +173,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    // Bloqueo total si Turnstile no está verificado
+    if (!isTurnstileVerified || !turnstileToken) {
+      setErrorMessage('Debe completar la verificación de seguridad anti-bot antes de continuar.');
+      return;
+    }
+
     // Validación de Correo
     if (!email || !email.includes('@')) {
       setErrorMessage('Por favor ingrese un correo electrónico válido.');
@@ -159,13 +188,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     // Modo: Recuperación de Contraseña
     if (mode === 'recovery') {
       setLoading(true);
-      const res = await resetPassword(email.trim(), turnstileToken || undefined);
+      const res = await resetPassword(email.trim(), turnstileToken);
       setLoading(false);
 
-      if (turnstileRef.current) turnstileRef.current.reset();
-
       if (res.success) {
-        // Mensaje uniforme anti-enumeración
         setSuccessMessage('Si el correo electrónico está registrado, recibirás un enlace seguro para restablecer tu contraseña.');
       } else {
         setErrorMessage(res.error || 'No se pudo procesar la solicitud de recuperación.');
@@ -191,10 +217,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
 
       setLoading(true);
-      const res = await signUp(email.trim(), password, fullName.trim(), turnstileToken || undefined);
+      const res = await signUp(email.trim(), password, fullName.trim(), turnstileToken);
       setLoading(false);
-
-      if (turnstileRef.current) turnstileRef.current.reset();
 
       if (res.success) {
         if (res.requiresVerification) {
@@ -204,7 +228,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           setSuccessMessage('¡Registro exitoso! Bienvenido a Bingo Club VNZLA.');
           setTimeout(() => {
             onSuccess?.();
-            onClose();
+            handleClose();
           }, 1200);
         }
       } else {
@@ -215,14 +239,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     // Modo: Inicio de Sesión
     setLoading(true);
-    const res = await signIn(email.trim(), password, turnstileToken || undefined);
+    const res = await signIn(email.trim(), password, turnstileToken);
     setLoading(false);
-
-    if (turnstileRef.current) turnstileRef.current.reset();
 
     if (res.success) {
       onSuccess?.();
-      onClose();
+      handleClose();
     } else {
       if (res.isUnconfirmed) {
         setUnconfirmedEmail(email.trim());
@@ -231,20 +253,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-2xl">
         {/* Botón Cerrar */}
         <button
-          onClick={onClose}
-          className="absolute right-4 top-4 p-1 text-slate-400 hover:text-white transition-colors"
+          onClick={handleClose}
+          className="absolute right-4 top-4 p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
           aria-label="Cerrar modal"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Encabezado */}
-        <div className="mb-6 text-center">
+        <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-lg shadow-amber-500/20">
             <Lock className="h-6 w-6" />
           </div>
@@ -289,7 +313,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="button"
                     onClick={handleResendConfirmation}
                     disabled={loading}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-rose-500/20 text-rose-200 hover:bg-rose-500/30 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-rose-500/20 text-rose-200 hover:bg-rose-500/30 transition-colors cursor-pointer"
                   >
                     <Send className="h-3 w-3" />
                     <span>Reenviar enlace de confirmación</span>
@@ -308,19 +332,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* Botón de Google OAuth (en Login y Registro) */}
+        {/* ========================================================================= */}
+        {/* FLUJO DE VERIFICACIÓN HUMANA TURNSTILE (PRIMER PASO OBLIGATORIO)          */}
+        {/* ========================================================================= */}
+        {mode !== 'update_password' && (
+          <div className="mb-3">
+            <CloudflareTurnstile
+              ref={turnstileRef}
+              onVerify={handleTurnstileVerify}
+              onExpire={handleTurnstileExpire}
+              onError={handleTurnstileError}
+              onStatusChange={setTurnstileBlocked}
+              onVerificationChange={handleTurnstileVerificationChange}
+              action={mode === 'register' ? 'signup' : mode === 'recovery' ? 'recovery' : 'login'}
+            />
+          </div>
+        )}
+
+        {/* Botón de Google OAuth (en Login y Registro) - Protegido por Turnstile */}
         {(mode === 'login' || mode === 'register') && (
           <div className="mb-4">
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              disabled={googleLoading || loading || isEffectiveBlocked}
-              className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+              disabled={googleLoading || loading || !isTurnstileVerified}
+              aria-disabled={googleLoading || loading || !isTurnstileVerified}
+              className={`w-full flex items-center justify-center gap-2.5 rounded-lg border py-2.5 px-4 text-xs font-semibold transition-all ${
+                !isTurnstileVerified
+                  ? 'border-slate-800 bg-slate-950/40 text-slate-500 cursor-not-allowed opacity-60'
+                  : 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800 hover:text-white hover:border-slate-600 cursor-pointer shadow-sm'
+              }`}
             >
               {googleLoading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
               ) : (
-                <svg className="h-4 w-4" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3h3.88c2.27-2.09 3.665-5.17 3.665-9.09z"
@@ -340,6 +386,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </svg>
               )}
               <span>Continuar con Google</span>
+              {!isTurnstileVerified && (
+                <span className="text-[10px] text-slate-500 font-normal ml-auto">(Bloqueado)</span>
+              )}
             </button>
 
             {/* Separador elegante */}
@@ -407,7 +456,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setMode('recovery');
                       resetFormState();
                     }}
-                    className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
+                    className="text-xs text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
@@ -446,20 +495,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Protección Cloudflare Turnstile */}
-          <CloudflareTurnstile
-            ref={turnstileRef}
-            onVerify={handleTurnstileVerify}
-            onExpire={handleTurnstileExpire}
-            onStatusChange={setTurnstileBlocked}
-            action={mode === 'register' ? 'signup' : mode === 'recovery' ? 'recovery' : 'login'}
-          />
-
           {/* Botón Principal de Acción */}
           <button
             type="submit"
-            disabled={loading || (isEffectiveBlocked && mode !== 'update_password')}
-            className="w-full rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 py-2.5 px-4 text-xs font-bold text-slate-950 shadow-md hover:from-amber-300 hover:to-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 transition-all cursor-pointer"
+            disabled={loading || (mode !== 'update_password' && !isTurnstileVerified)}
+            aria-disabled={loading || (mode !== 'update_password' && !isTurnstileVerified)}
+            className={`w-full rounded-lg py-2.5 px-4 text-xs font-bold transition-all ${
+              mode !== 'update_password' && !isTurnstileVerified
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-60'
+                : 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md hover:from-amber-300 hover:to-amber-400 cursor-pointer'
+            }`}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -468,9 +513,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </span>
             ) : (
               <>
-                {mode === 'login' && 'INICIAR SESIÓN'}
-                {mode === 'register' && 'CREAR CUENTA'}
-                {mode === 'recovery' && 'ENVIAR ENLACE DE RECUPERACIÓN'}
+                {mode === 'login' && (isTurnstileVerified ? 'INICIAR SESIÓN' : 'VERIFICACIÓN REQUERIDA')}
+                {mode === 'register' && (isTurnstileVerified ? 'CREAR CUENTA' : 'VERIFICACIÓN REQUERIDA')}
+                {mode === 'recovery' && (isTurnstileVerified ? 'ENVIAR ENLACE DE RECUPERACIÓN' : 'VERIFICACIÓN REQUERIDA')}
                 {mode === 'update_password' && 'ACTUALIZAR CONTRASEÑA'}
               </>
             )}
@@ -488,7 +533,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   setMode('register');
                   resetFormState();
                 }}
-                className="font-semibold text-amber-400 hover:text-amber-300"
+                className="font-semibold text-amber-400 hover:text-amber-300 cursor-pointer"
               >
                 Crear cuenta
               </button>
@@ -504,7 +549,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   setMode('login');
                   resetFormState();
                 }}
-                className="font-semibold text-amber-400 hover:text-amber-300"
+                className="font-semibold text-amber-400 hover:text-amber-300 cursor-pointer"
               >
                 Inicia sesión aquí
               </button>
@@ -518,7 +563,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 setMode('login');
                 resetFormState();
               }}
-              className="inline-flex items-center gap-1 font-semibold text-amber-400 hover:text-amber-300"
+              className="inline-flex items-center gap-1 font-semibold text-amber-400 hover:text-amber-300 cursor-pointer"
             >
               <ArrowLeft className="h-3 w-3" />
               <span>Volver al inicio de sesión</span>
@@ -535,3 +580,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
+
