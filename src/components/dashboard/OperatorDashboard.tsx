@@ -11,7 +11,7 @@ import {
   Search,
   CheckCircle2
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const OperatorDashboard: React.FC = () => {
   const { profile, effectiveRole } = useAuth();

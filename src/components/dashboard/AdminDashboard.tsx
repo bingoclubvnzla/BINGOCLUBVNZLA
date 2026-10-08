@@ -12,7 +12,7 @@ import {
   XCircle,
   Database
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { isValidDrawTransition, ROLE_HIERARCHY, ROLE_PERMISSIONS } from '../../lib/security';
 import type { DrawStatus, UserRole } from '../../types/database.types';
 

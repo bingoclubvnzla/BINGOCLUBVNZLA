@@ -4,11 +4,16 @@
 // Muestra: Número actual visible, historial completo, contadores y reconexión.
 // ==============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { DrawSnapshot, ConnectionStatus } from '../types/realtimeEvents';
 import { DRAW_REALTIME_EVENTS } from '../types/realtimeEvents';
 import { getBallMetadata, getBingo75Letter, speakBallTTS } from '../lib/catalogs';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, fetchUserCards, claimBingoAuthoritative } from '../lib/supabase';
+import { playBallChime, isSoundMuted, toggleSound } from '../lib/soundFx';
+import { useAuth } from '../contexts/AuthContext';
+import { BingoCard } from './BingoCard';
+import { WinCelebration, type WinCelebrationData } from './WinCelebration';
+import type { Card } from '../types/database';
 import {
   Radio,
   Wifi,
@@ -23,6 +28,7 @@ import {
   Flame,
   Volume2,
   VolumeX,
+  Sparkles
 } from 'lucide-react';
 
 interface LivePlayRoomProps {
@@ -45,16 +51,45 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
   );
   const [isSimulatingReconnect, setIsSimulatingReconnect] = useState(false);
   const [serverClock, setServerClock] = useState<string>(new Date().toISOString().substring(11, 19) + ' UTC');
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => isSoundMuted());
+
+  // Estado del usuario y cartones del jugador en esta sala
+  const { user } = useAuth();
+  const [playerCards, setPlayerCards] = useState<Card[]>([]);
+  const [loadingCards, setLoadingCards] = useState(false);
+
+  // Celebración de ganador server-authoritative
+  const [winnerCelebrationData, setWinnerCelebrationData] = useState<WinCelebrationData | null>(null);
+  const celebratedEventsRef = useRef<Set<string>>(new Set());
+
+  // Cargar cartones reales del jugador para este sorteo
+  useEffect(() => {
+    if (!user?.id || !isSupabaseConfigured) return;
+    let isMounted = true;
+    setLoadingCards(true);
+
+    fetchUserCards(user.id).then((res) => {
+      if (isMounted && res.data) {
+        const matching = res.data.filter((c) => c.draw_id === snapshot.draw_id);
+        setPlayerCards(matching);
+      }
+      if (isMounted) setLoadingCards(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, snapshot.draw_id]);
 
   // Mantener snapshot actualizado si cambian las props
   useEffect(() => {
     setSnapshot(initialSnapshot);
   }, [initialSnapshot]);
 
-  // Locución oficial automática mediante Web Speech API cuando el servidor emite una nueva balota
+  // Locución oficial automática mediante Web Speech API y chime sutil cuando el servidor emite una nueva balota
   useEffect(() => {
     if (snapshot.current_ball !== null && !isMuted) {
+      playBallChime();
       speakBallTTS(snapshot.modality_id, snapshot.current_ball, true);
     }
   }, [snapshot.current_ball, snapshot.modality_id, isMuted]);
@@ -66,6 +101,12 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleToggleMute = () => {
+    const next = toggleSound();
+    setIsMuted(next);
+  };
+
 
   // Suscripción al canal WebSocket Realtime oficial de Supabase
   useEffect(() => {
@@ -102,6 +143,29 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
       .on('broadcast', { event: DRAW_REALTIME_EVENTS.DRAW_FINISHED }, () => {
         setSnapshot((prev) => ({ ...prev, status: 'FINISHED' }));
       })
+      .on('broadcast', { event: DRAW_REALTIME_EVENTS.WINNER_AWARDED }, ({ payload }) => {
+        if (!payload) return;
+        const winnerKey = payload.event_hash || payload.winner_id || payload.card_id;
+        if (winnerKey && celebratedEventsRef.current.has(winnerKey)) return;
+        if (winnerKey) celebratedEventsRef.current.add(winnerKey);
+
+        setWinnerCelebrationData({
+          winner_id: payload.winner_id || 'OFICIAL',
+          draw_id: payload.draw_id || snapshot.draw_id,
+          card_id: payload.card_id,
+          user_id: payload.user_id,
+          pattern: payload.pattern || 'CARTON_LLENO',
+          prize_amount: Number(payload.prize_amount || 0),
+          event_hash: payload.event_hash,
+          sequence_number: payload.sequence_number,
+          isCurrentPlayer: user?.id && payload.user_id ? user.id === payload.user_id : false,
+        });
+
+        // Actualizar cartón a WON si es del jugador
+        setPlayerCards((prev) =>
+          prev.map((c) => (c.id === payload.card_id ? { ...c, status: 'WON' } : c))
+        );
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('EN_VIVO');
@@ -134,6 +198,52 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
         setIsSimulatingReconnect(false);
       }, 700);
     }, 1200);
+  };
+
+  // Reclamo autoritativo de bingo validado directamente por PostgreSQL
+  const handleClaimBingo = async (cardId: string, pattern: string = 'CARTON_LLENO') => {
+    const res = await claimBingoAuthoritative(snapshot.draw_id, cardId, pattern);
+    if (res.success && res.data) {
+      const winnerData = res.data;
+      const winnerKey = winnerData.winner_id;
+      if (winnerKey && !celebratedEventsRef.current.has(winnerKey)) {
+        celebratedEventsRef.current.add(winnerKey);
+        setWinnerCelebrationData({
+          winner_id: winnerData.winner_id,
+          draw_id: snapshot.draw_id,
+          card_id: cardId,
+          user_id: user?.id,
+          pattern: winnerData.pattern || pattern,
+          prize_amount: Number(winnerData.prize_amount || 0),
+          isCurrentPlayer: true,
+        });
+      }
+
+      setPlayerCards((prev) =>
+        prev.map((c) => (c.id === cardId ? { ...c, status: 'WON' } : c))
+      );
+
+      // Difundir evento de ganador por Realtime a la sala
+      if (isSupabaseConfigured) {
+        const channel = supabase.channel(`draw:${snapshot.draw_id}`);
+        channel.send({
+          type: 'broadcast',
+          event: DRAW_REALTIME_EVENTS.WINNER_AWARDED,
+          payload: {
+            winner_id: winnerData.winner_id,
+            draw_id: snapshot.draw_id,
+            card_id: cardId,
+            user_id: user?.id,
+            pattern: winnerData.pattern || pattern,
+            prize_amount: Number(winnerData.prize_amount || 0),
+          },
+        });
+      }
+
+      return { success: true, message: winnerData.message || '¡Premio verificado y otorgado exitosamente!' };
+    }
+
+    return { success: false, message: res.message || res.error || 'El servidor autoritativo no validó el bingo.' };
   };
 
   const currentBallNum = snapshot.current_ball;
@@ -225,39 +335,48 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
 
             {/* Locutor TTS Oficial (Voz del sorteo) */}
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={handleToggleMute}
               title={isMuted ? 'Activar voz oficial del cantador' : 'Silenciar voz del cantador'}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
                 isMuted
                   ? 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
                   : 'bg-amber-950/40 border-amber-500/40 text-amber-400 hover:bg-amber-900/50'
               }`}
             >
               {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-              <span>{isMuted ? 'Voz Desactivada' : 'Locutor En Vivo'}</span>
+              <span>{isMuted ? 'Sonido Desactivado' : 'Locutor En Vivo'}</span>
             </button>
           </div>
         </div>
 
         {/* ÁREA CENTRAL: BALOTA ACTUAL (MÁXIMA VISIBILIDAD Y ACCESIBILIDAD) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-6 flex flex-col items-center justify-center text-center shadow-xl">
-            <div className="flex items-center justify-between w-full text-xs text-slate-400 font-mono mb-4 border-b border-slate-800 pb-2">
-              <span className="flex items-center gap-1 text-amber-400">
+          <div className="lg:col-span-1 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-[#050b14] p-6 flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden">
+            {/* Resplandor superior sutil */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500/20 via-amber-400/50 to-amber-500/20" />
+
+            <div className="flex items-center justify-between w-full text-xs text-slate-400 font-mono mb-4 border-b border-slate-800 pb-2.5">
+              <span className="flex items-center gap-1 text-amber-400 font-bold">
                 <Flame className="h-3.5 w-3.5" />
                 BALOTA CANTADA
               </span>
-              <span>
+              <span className="text-slate-300 font-semibold">
                 {snapshot.drawn_numbers.length} / {snapshot.total_balls}
               </span>
             </div>
 
             {currentBallNum !== null && currentBallMeta ? (
               <div className="flex flex-col items-center justify-center my-4 animate-in zoom-in-95 duration-200">
-                {/* Esfera / Balota destacada */}
-                <div className="relative flex h-36 w-36 sm:h-44 sm:w-44 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-amber-500 to-amber-600 text-slate-950 font-black shadow-2xl shadow-amber-500/25 border-4 border-amber-200">
+                {/* Esfera 3D con relieve metálico según modalidad */}
+                <div className={`relative flex h-36 w-36 sm:h-44 sm:w-44 items-center justify-center rounded-full text-slate-950 font-black border-4 border-amber-200/90 ${
+                  snapshot.modality_id === 'BINGO_90'
+                    ? 'ball-sphere-navy text-white'
+                    : snapshot.modality_id === 'ANIMALITOS' || snapshot.modality_id === 'CHAPITAS'
+                    ? 'ball-sphere-criollo'
+                    : 'ball-sphere-gold'
+                }`}>
                   {currentBallMeta.letter && (
-                    <span className="absolute top-2.5 sm:top-3 text-sm sm:text-base tracking-widest font-bold text-slate-900/80 font-mono">
+                    <span className="absolute top-2.5 sm:top-3.5 text-sm sm:text-base tracking-widest font-bold text-slate-900/90 font-mono">
                       {currentBallMeta.letter}
                     </span>
                   )}
@@ -267,7 +386,7 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
                 </div>
 
                 {/* Nombre de la figura / subtexto y botón de locución */}
-                <div className="mt-4">
+                <div className="mt-5">
                   <div className="flex items-center justify-center gap-2">
                     <h2 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight">
                       {currentBallMeta.subtext || currentBallMeta.displayLabel}
@@ -275,12 +394,12 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
                     <button
                       onClick={() => speakBallTTS(snapshot.modality_id, currentBallNum, true)}
                       title="Repetir locución oficial"
-                      className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 transition-colors"
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
                     >
                       <Volume2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  <p className="text-xs text-slate-400 font-mono mt-1">
                     {snapshot.modality_id === 'ANIMALITOS'
                       ? 'Animalito Oficial'
                       : snapshot.modality_id === 'OBJETOS'
@@ -293,15 +412,16 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
             ) : (
               <div className="flex flex-col items-center justify-center my-10 text-slate-500">
                 <div className="h-32 w-32 rounded-full border-2 border-dashed border-slate-800 flex items-center justify-center mb-3">
-                  <span className="text-xs font-mono uppercase tracking-widest">En Espera</span>
+                  <span className="text-xs font-mono uppercase tracking-widest text-slate-400">En Espera</span>
                 </div>
-                <p className="text-xs">
+                <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
                   {snapshot.status === 'READY'
-                    ? 'Sorteo preparado. Esperando señal de inicio del servidor.'
-                    : 'Aún no se ha emitido ninguna balota.'}
+                    ? 'Sorteo preparado. Esperando señal de inicio del servidor autoritativo.'
+                    : 'Aún no se ha emitido ninguna balota oficial.'}
                 </p>
               </div>
             )}
+
 
             {/* Botón de Prueba de Resiliencia / F5 Reconnect */}
             <div className="w-full pt-4 mt-auto border-t border-slate-800/80 flex flex-col gap-2">
@@ -408,7 +528,60 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
             </div>
           </div>
         </div>
+
+        {/* SECCIÓN DE CARTONES DEL JUGADOR EN ESTA SALA */}
+        {user && (
+          <div className="pt-6 border-t border-slate-800/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-white font-display flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  Tus Cartones Oficiales
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Cartones adquiridos vinculados a este sorteo. El marcado es server-authoritative según las balotas cantadas.
+                </p>
+              </div>
+
+              <span className="self-start sm:self-auto px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-amber-400">
+                {playerCards.length} {playerCards.length === 1 ? 'Cartón en Juego' : 'Cartones en Juego'}
+              </span>
+            </div>
+
+            {loadingCards ? (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center text-xs text-slate-400 font-mono flex items-center justify-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin text-amber-400" />
+                <span>Cargando cartones oficiales del jugador...</span>
+              </div>
+            ) : playerCards.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {playerCards.map((card) => (
+                  <BingoCard
+                    key={card.id}
+                    card={card}
+                    drawnNumbers={snapshot.drawn_numbers}
+                    modalityId={snapshot.modality_id}
+                    onClaimBingo={handleClaimBingo}
+                    isDrawActive={snapshot.status === 'ACTIVE'}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-lg mx-auto">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  No tienes cartones registrados para este sorteo en vivo. Puedes adquirir cartones en las salas programadas o regresar al lobby.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* MODAL DE CELEBRACIÓN DE GANADOR (WINNER_AWARDED) */}
+      <WinCelebration
+        data={winnerCelebrationData}
+        onClose={() => setWinnerCelebrationData(null)}
+      />
     </div>
   );
 };

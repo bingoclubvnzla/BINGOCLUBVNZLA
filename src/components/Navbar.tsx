@@ -7,8 +7,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Menu, X, Play, User as UserIcon, ShieldAlert } from 'lucide-react';
 import type { UserRole } from '../types/database';
 import { hasSufficientRole } from '../lib/adminIdentities';
+import { playClickSound } from '../lib/soundFx';
 
-export type AppView = 'landing' | 'player' | 'operator' | 'supervisor' | 'admin' | 'super-admin' | 'play';
+export type AppView = 'landing' | 'player' | 'operator' | 'supervisor' | 'admin' | 'super-admin' | 'play' | 'support';
 
 interface NavbarProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
@@ -22,6 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleEnterGame = () => {
+    playClickSound();
     if (!isAuthenticated) {
       onOpenAuth('login');
       return;
@@ -40,6 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
   };
 
   const handleMyAccount = () => {
+    playClickSound();
     if (!isAuthenticated) {
       onOpenAuth('login');
       return;
@@ -48,37 +51,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
   };
 
   const handleLogout = async () => {
+    playClickSound();
     await signOut();
     setActiveView('landing');
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-850 bg-slate-950/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-850/80 bg-[#050b14]/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand: BINGO CLUB VNZLA + Subtítulo */}
+        {/* Zone 1: Brand: BINGO CLUB VNZLA */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setActiveView('landing')}
-            className="flex items-center gap-3 text-left group cursor-pointer"
+            onClick={() => { playClickSound(); setActiveView('landing'); }}
+            className="flex items-center gap-2.5 text-left group cursor-pointer"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20 font-black text-sm tracking-tighter">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20 font-black text-xs tracking-tighter">
               BCV
             </span>
-            <div className="flex flex-col">
-              <span className="font-display font-extrabold tracking-wider text-base sm:text-lg text-white group-hover:text-amber-400 transition-colors">
-                BINGO CLUB VNZLA
-              </span>
-              <span className="text-[11px] font-medium text-amber-400/90 -mt-1 hidden sm:block">
-                Bingo venezolano en vivo
-              </span>
-            </div>
+            <span className="font-display font-extrabold tracking-wider text-base sm:text-lg text-white group-hover:text-amber-400 transition-colors">
+              BINGO CLUB <span className="gold-text-gradient">VNZLA</span>
+            </span>
           </button>
         </div>
 
-        {/* Enlaces de navegación públicos */}
+        {/* Zone 2: Enlaces de navegación públicos */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
           <button
-            onClick={() => setActiveView('landing')}
+            onClick={() => { playClickSound(); setActiveView('landing'); }}
             className={`transition-colors hover:text-amber-400 cursor-pointer ${
               activeView === 'landing' ? 'text-amber-400 font-semibold' : ''
             }`}
@@ -87,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
           </button>
 
           <button
-            onClick={() => setActiveView('play')}
+            onClick={() => { playClickSound(); setActiveView('play'); }}
             className={`flex items-center gap-1.5 transition-colors hover:text-amber-400 cursor-pointer ${
               activeView === 'play' ? 'text-amber-400 font-semibold' : 'text-slate-300'
             }`}
@@ -98,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
 
           <a
             href="#modalidades"
-            onClick={() => setActiveView('landing')}
+            onClick={() => { playClickSound(); setActiveView('landing'); }}
             className="transition-colors hover:text-amber-400 cursor-pointer"
           >
             Modalidades
@@ -106,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
 
           <a
             href="#como-jugar"
-            onClick={() => setActiveView('landing')}
+            onClick={() => { playClickSound(); setActiveView('landing'); }}
             className="transition-colors hover:text-amber-400 cursor-pointer"
           >
             Cómo jugar
@@ -114,11 +113,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
 
           <a
             href="#ayuda"
-            onClick={() => setActiveView('landing')}
+            onClick={() => { playClickSound(); setActiveView('landing'); }}
             className="transition-colors hover:text-amber-400 cursor-pointer"
           >
             Ayuda
           </a>
+
 
           {/* Menú de gestión exclusiva para personal autorizado (RBAC) */}
           {isAuthenticated && hasSufficientRole(role, 'OPERATOR') && (
@@ -173,19 +173,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
           {!isAuthenticated ? (
             <div className="flex items-center gap-2.5">
               <button
-                onClick={() => onOpenAuth('login')}
+                onClick={() => { playClickSound(); onOpenAuth('login'); }}
                 className="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-amber-400 transition-colors cursor-pointer"
               >
                 INICIAR SESIÓN
               </button>
               <button
-                onClick={() => onOpenAuth('register')}
+                onClick={() => { playClickSound(); onOpenAuth('register'); }}
                 className="px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 rounded-lg shadow-sm hover:from-amber-300 hover:to-amber-500 transition-all cursor-pointer whitespace-nowrap"
               >
                 REGISTRARME
               </button>
             </div>
           ) : (
+
             <div className="flex items-center gap-3">
               <button
                 onClick={handleEnterGame}

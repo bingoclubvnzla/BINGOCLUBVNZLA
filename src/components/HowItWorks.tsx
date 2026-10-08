@@ -1,79 +1,80 @@
-// ============================================================================
 // BINGO CLUB VNZLA ONLINE — CÓMO FUNCIONA
-// ============================================================================
+// FASE 1: 4 PASOS TRANSPARENTES Y SEGUROS
 
 import React from 'react';
-import { UserCheck, Grid3X3, Radio, Trophy } from 'lucide-react';
+import { UserCheck, LayoutGrid, Award, Zap } from 'lucide-react';
 
 export const HowItWorks: React.FC = () => {
   const steps = [
     {
       step: '01',
-      title: 'Registro Seudónimo Seguro',
-      description:
-        'Crea tu cuenta con correo y contraseña. El sistema genera automáticamente tu identificador único anónimo (ej. BCV-7K9M2P). Tu correo nunca se expone públicamente en las salas de juego.',
+      title: 'Identidad y Privacidad Protegida',
+      description: 'Regístrese con su correo y reciba automáticamente un identificador público confidencial (BCV-XXXXXX). Su correo nunca se expone a terceros.',
       icon: UserCheck,
+      color: 'from-blue-600 to-indigo-700',
     },
     {
       step: '02',
       title: 'Selección de Modalidad Criolla',
-      description:
-        'Elige entre formatos tradicionales como Bingo 75, Bingo 90, o las modalidades emblemáticas venezolanas de Animalitos, Objetos y Chapitas, con configuraciones de matriz estandarizadas.',
-      icon: Grid3X3,
+      description: 'Elija entre Bingo 75, Bingo 90, Animalitos Vnzla, Objetos Criollos o Chapitas Callejeras según su preferencia y dinámica de juego.',
+      icon: LayoutGrid,
+      color: 'from-amber-500 to-yellow-600',
     },
     {
       step: '03',
-      title: 'Sorteo Server-Authoritative en Vivo',
-      description:
-        'Las balotas son extraídas por el servidor y difundidas a través de canales Supabase Realtime autorizados. El navegador solo muestra la animación; el backend mantiene la verdad oficial.',
-      icon: Radio,
+      title: 'Cartones Digitales Certificados',
+      description: 'Cada cartón digital es emitido por el servidor con una matriz matemática inmutable y serial criptográfico único para evitar falsificaciones.',
+      icon: Award,
+      color: 'from-emerald-500 to-teal-600',
     },
     {
       step: '04',
-      title: 'Verificación Criptográfica y Auditoría',
-      description:
-        'Al cantar Bingo, una Edge Function valida el cartón contra la secuencia exacta cantada en base de datos. Todo reclamo y evento queda registrado en el libro inmutable de auditoría.',
-      icon: Trophy,
+      title: 'Sorteo en Tiempo Real (Server Authoritative)',
+      description: 'Las balotas son extraídas con cadencia autorizada y sincronizadas por Supabase Realtime. El servidor valida al instante los ganadores legítimos.',
+      icon: Zap,
+      color: 'from-rose-500 to-red-600',
     },
   ];
 
   return (
-    <section id="como-funciona" className="py-20 sm:py-24 border-b border-slate-800/60 bg-slate-950">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold tracking-widest text-amber-400 uppercase">
-            Transparencia y Juego Limpio
-          </p>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ textWrap: 'balance' }}>
-            Cómo Funciona Bingo Club Vnzla
+    <section id="como-funciona" className="py-20 bg-slate-900/30 border-t border-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+            Flujo de Juego
+          </span>
+          <h2 className="mt-3 text-3xl sm:text-5xl font-black text-white tracking-tight">
+            ¿Cómo Funciona la Plataforma?
           </h2>
-          <p className="mt-3 text-base text-slate-400">
-            Un flujo diseñado bajo estándares bancarios donde la suerte es matemáticamente auditable y el jugador mantiene su privacidad intacta.
+          <p className="mt-4 text-slate-400 text-base sm:text-lg">
+            Un sistema diseñado para brindar transparencia total, respeto a las reglas y diversión sin complicaciones.
           </p>
         </div>
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map((item) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {steps.map((item, index) => {
             const Icon = item.icon;
             return (
               <div
-                key={item.step}
-                className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 hover:border-slate-700 transition-colors"
+                key={index}
+                className="relative rounded-2xl bg-slate-900/60 border border-slate-800 p-6 flex flex-col justify-between hover:border-slate-700 transition-all group"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 text-amber-400">
-                    <Icon className="h-6 w-6" />
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="font-mono text-3xl font-black text-slate-700 group-hover:text-amber-400/60 transition-colors">
+                      {item.step}
+                    </span>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white shadow-lg`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
                   </div>
-                  <span className="font-mono text-2xl font-black text-slate-700">
-                    {item.step}
-                  </span>
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    {item.description}
+                  </p>
                 </div>
-                <h3 className="mt-6 text-lg font-bold text-white">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                  {item.description}
-                </p>
               </div>
             );
           })}

@@ -23,6 +23,7 @@ import {
 } from '../services/mfaService';
 import { MfaEnrollmentModal } from './mfa/MfaEnrollmentModal';
 import { StepUpAuthModal } from './mfa/StepUpAuthModal';
+import { BingoCard } from './BingoCard';
 import {
   Wallet,
   Grid3X3,
@@ -539,17 +540,18 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
           <div>
             {userCards.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userCards.map((c) => (
-                  <div key={c.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-                    <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2">
-                      <span>Cartón #{c.card_serial || c.id.slice(0, 8)}</span>
-                      <span className="text-amber-400 font-semibold">{c.status}</span>
-                    </div>
-                    <div className="text-xs text-slate-400 font-mono">
-                      Sorteo: {c.draw_id}
-                    </div>
-                  </div>
-                ))}
+                {userCards.map((c) => {
+                  const matchingDraw = activeDraws.find((d) => d.id === c.draw_id);
+                  return (
+                    <BingoCard
+                      key={c.id}
+                      card={c}
+                      drawnNumbers={matchingDraw?.drawn_numbers || []}
+                      modalityId={matchingDraw?.modality_id || 'BINGO_75'}
+                      isDrawActive={matchingDraw?.status === 'ACTIVE'}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-10 text-center max-w-xl mx-auto">

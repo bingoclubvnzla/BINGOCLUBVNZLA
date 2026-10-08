@@ -1,74 +1,71 @@
+// BINGO CLUB VNZLA ONLINE — JUEGO RESPONSABLE
+// FASE 1: POLÍTICAS DE PROTECCIÓN AL JUGADOR (18+)
+
 import React from 'react';
-import { HeartHandshake, ShieldAlert, Clock, Ban } from 'lucide-react';
+import { HeartHandshake, ShieldCheck, AlertCircle, Ban, Clock } from 'lucide-react';
 
 export const ResponsibleGamingSection: React.FC = () => {
-  const policies = [
-    {
-      title: 'Acceso Exclusivo para Mayores de 18 Años',
-      desc: 'El registro y participación en Bingo Club Vnzla está estrictamente prohibido para menores de edad. Verificación mediante documento de identidad en fases operativas.',
-      icon: Ban,
-    },
-    {
-      title: 'Límites de Tiempo y Conciencia',
-      desc: 'El entretenimiento digital debe disfrutarse con moderación. Fomentamos pausas regulares y recordatorios de sesión.',
-      icon: Clock,
-    },
-    {
-      title: 'Autoexclusión Preventiva',
-      desc: 'Cualquier usuario podrá solicitar la suspensión temporal o definitiva de su cuenta a través de su panel de seguridad sin objeción.',
-      icon: ShieldAlert,
-    },
-    {
-      title: 'Entretenimiento Seguro',
-      desc: 'El bingo es un pasatiempo social y de destreza tradicional. Nunca debe verse como una vía de ingresos ni recuperación de pérdidas.',
-      icon: HeartHandshake,
-    },
-  ];
-
   return (
-    <section id="juego-responsable" className="py-20 bg-[#070D18]">
+    <section className="py-16 bg-slate-900/40 border-t border-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="max-w-2xl mb-12">
-          <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 mb-2">
-            <span>COMPROMISO ÉTICO</span>
-            <span aria-hidden="true" className="text-slate-600">·</span>
-            <span className="text-slate-400">JUEGO SEGURO</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-['Outfit'] tracking-tight">
-            Política de Juego Responsable
-          </h2>
-          <p className="mt-3 text-base text-slate-400">
-            Fomentamos una comunidad sana, transparente y protegida. El juego digital debe ser siempre una experiencia divertida y controlada.
-          </p>
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {policies.map((p, idx) => {
-            const Icon = p.icon;
-            return (
-              <div
-                key={idx}
-                className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-base font-bold text-white mb-2 font-['Outfit']">
-                    {p.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {p.desc}
-                  </p>
-                </div>
+        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950/60 p-8 sm:p-12 border border-slate-800">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-800">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-800/80 text-red-300 text-xs font-bold mb-3">
+                <Ban className="w-3.5 h-3.5" />
+                Solo Mayores de 18 Años (+18)
               </div>
-            );
-          })}
-        </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-white">
+                Compromiso de Juego Responsable
+              </h2>
+              <p className="mt-2 text-slate-400 text-xs sm:text-sm max-w-xl">
+                El bingo es una actividad recreativa y social tradicional. Fomentamos prácticas saludables y herramientas de autoexclusión.
+              </p>
+            </div>
 
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <div className="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400 font-black text-2xl">
+                +18
+              </div>
+              <div className="text-xs text-slate-400">
+                <p className="font-bold text-white">Prohibido a menores</p>
+                <p>Verificación obligatoria de edad en registro</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+            <div className="flex gap-4">
+              <Clock className="w-6 h-6 text-amber-400 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="text-sm font-bold text-white">Límites de Tiempo</h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Alertas periódicas de duración de sesión para evitar juego compulsivo.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <ShieldCheck className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="text-sm font-bold text-white">Límites de Cartones</h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Tope máximo de cartones por sorteo configurado en la base de datos para preservar la equidad.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <HeartHandshake className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="text-sm font-bold text-white">Autoexclusión Voluntaria</h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Facilidad para congelar o suspender temporalmente la cuenta en cualquier momento.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

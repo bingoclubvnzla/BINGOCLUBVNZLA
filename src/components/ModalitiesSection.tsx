@@ -1,296 +1,280 @@
+// BINGO CLUB VNZLA ONLINE — SECCIÓN DE MODALIDADES DE JUEGO
+// FASE 1: 5 MODALIDADES OFICIALES CON ESPECIFICACIÓN TÉCNICA
+
 import React, { useState } from 'react';
-import { GameModality } from '../types/database';
-import { Layers, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ModalityCode } from '../types/database.types';
+import {
+  Grid,
+  CheckCircle,
+  HelpCircle,
+  Sparkles,
+  Info,
+  Layers,
+  ChevronRight,
+} from 'lucide-react';
+
+interface ModalityData {
+  code: ModalityCode;
+  name: string;
+  tagline: string;
+  gridRows: number;
+  gridCols: number;
+  hasFreeCenter: boolean;
+  totalElements: number;
+  accentColor: string;
+  badge: string;
+  description: string;
+  rules: string[];
+  sampleItems: string[];
+}
+
+const MODALITIES: ModalityData[] = [
+  {
+    code: 'BINGO_75',
+    name: 'Bingo Tradicional 75 Balotas',
+    tagline: 'El clásico americano adaptado a Venezuela con cuadrícula 5x5 y casilla central libre.',
+    gridRows: 5,
+    gridCols: 5,
+    hasFreeCenter: true,
+    totalElements: 75,
+    accentColor: 'from-blue-600 to-indigo-800',
+    badge: '5x5 | Centro Libre',
+    description: 'Los cartones se ordenan por las columnas B (1-15), I (16-30), N (31-45), G (46-60) y O (61-75). La casilla central N-3 es un comodín libre (FREE) pre-marcado.',
+    rules: [
+      'Gana por Línea Horizontal, Vertical o Diagonal',
+      'Modalidad de 4 Esquinas disponible',
+      'Cartón Lleno (Full House) para el premio mayor',
+    ],
+    sampleItems: ['B-7', 'I-22', 'N-FREE', 'G-54', 'O-68'],
+  },
+  {
+    code: 'BINGO_90',
+    name: 'Bingo 90 Balotas Español',
+    tagline: 'La modalidad europea tradicional con cartón de 3 filas y 9 columnas.',
+    gridRows: 3,
+    gridCols: 5,
+    hasFreeCenter: false,
+    totalElements: 90,
+    accentColor: 'from-amber-600 to-orange-800',
+    badge: '3x5 | 90 Números',
+    description: 'Cada cartón contiene 15 números distribuidos en 3 filas y 5 números por fila, con casillas en blanco intercaladas.',
+    rules: [
+      'Premio a la primera Línea de 5 números completada',
+      'Premio al Bingo cuando se marcan los 15 números del cartón',
+      'Extracción continua de balotas del 1 al 90',
+    ],
+    sampleItems: ['04', '18', '35', '62', '89'],
+  },
+  {
+    code: 'ANIMALITOS',
+    name: 'Lotto Animalitos Vnzla',
+    tagline: 'La gran tradición popular venezolana de los 38 animalitos en formato bingo 5x5.',
+    gridRows: 5,
+    gridCols: 5,
+    hasFreeCenter: true,
+    totalElements: 38,
+    accentColor: 'from-emerald-600 to-teal-800',
+    badge: '5x5 | 38 Figuras Criollas',
+    description: 'Inspirado en la histórica ruleta de figuras zoológicas venezolanas (Delfín, Ballena, Carnero, Toro, Tigre, Caimán, etc.) con casilla central libre.',
+    rules: [
+      '38 figuras oficiales de la cultura venezolana',
+      'Cuadrícula 5x5 con el icono emblemático criollo en el centro',
+      'Premios por Línea de Animalitos y Cuadrante completo',
+    ],
+    sampleItems: ['🐬 Delfín', '🐋 Ballena', '⭐ LIBRE', '🐅 Tigre', '🐊 Caimán'],
+  },
+  {
+    code: 'OBJETOS',
+    name: 'Bingo de Objetos Criollos',
+    tagline: 'Identidad, folklore y gastronomía venezolana en un cartón 5x5 interactivo.',
+    gridRows: 5,
+    gridCols: 5,
+    hasFreeCenter: true,
+    totalElements: 50,
+    accentColor: 'from-rose-600 to-red-800',
+    badge: '5x5 | 50 Elementos Criollos',
+    description: 'Cartones temáticos ilustrados con la arepa, el cuatro, las maracas, el chinchorro, las alpargatas, la tinaja y platos autóctonos.',
+    rules: [
+      '50 elementos de la venezolanidad',
+      'Casilla central libre representada por el Sol o el Araguaney',
+      'Fácil lectura visual para jugadores de todas las edades',
+    ],
+    sampleItems: ['🫓 Arepa', '🎸 Cuatro', '🌟 LIBRE', '🪇 Maracas', '🪵 Pilón'],
+  },
+  {
+    code: 'CHAPITAS',
+    name: 'Bingo Chapitas Callejero',
+    tagline: 'El clásico pasatiempo barrial venezolano en un tablero veloz de 3x5 casillas.',
+    gridRows: 3,
+    gridCols: 5,
+    hasFreeCenter: false,
+    totalElements: 60,
+    accentColor: 'from-cyan-600 to-blue-800',
+    badge: '3x5 | 60 Chapitas',
+    description: 'Formato dinámico de alta velocidad basado en chapas de refresco y malta numeradas del 1 al 60. Sin casillas libres, 15 números por cartón.',
+    rules: [
+      '60 chapitas en sorteo continuo y rápido',
+      'Cuadrícula compacta 3x5 de 15 números directos',
+      'Premios veloces: Fila de Chapas y Llena Total',
+    ],
+    sampleItems: ['🔘 Chapa 12', '🔘 Chapa 27', '🔘 Chapa 39', '🔘 Chapa 48', '🔘 Chapa 59'],
+  },
+];
 
 export const ModalitiesSection: React.FC = () => {
-  const modalities: GameModality[] = [
-    {
-      id: 'BINGO_75',
-      name: 'Bingo 75 Tradicional',
-      description: 'Matriz clásica 5x5 americana con casilla central libre. Cantada con 75 balotas divididas en las letras B-I-N-G-O. Ideal para figuras y cartón lleno.',
-      grid_rows: 5,
-      grid_cols: 5,
-      has_free_center: true,
-      free_center: true,
-      total_balls: 75,
-      number_range_min: 1,
-      number_range_max: 75,
-      config: {
-        winning_patterns: ['LINE', 'FULL_HOUSE'],
-      },
-      is_active: true,
-      display_order: 1,
-    },
-    {
-      id: 'BINGO_90',
-      name: 'Bingo 90 Español',
-      description: 'Modalidad clásica europea y latinoamericana. Matriz 3x9 con 5 números por fila (15 números por cartón) en un bombo oficial de 90 bolas.',
-      grid_rows: 3,
-      grid_cols: 9,
-      has_free_center: false,
-      free_center: false,
-      total_balls: 90,
-      number_range_min: 1,
-      number_range_max: 90,
-      config: {
-        numbers_per_card: 15,
-        numbers_per_row: 5,
-        winning_patterns: ['ONE_LINE', 'TWO_LINES', 'BINGO'],
-      },
-      is_active: true,
-      display_order: 2,
-    },
-    {
-      id: 'ANIMALITOS',
-      name: 'Bingo de Animalitos',
-      description: 'Modalidad oficial inspirada en los 75 animalitos de la suerte tradicionales. Matriz 5x5 con centro libre y catálogo oficial de 75 figuras con voz y visuales.',
-      grid_rows: 5,
-      grid_cols: 5,
-      has_free_center: true,
-      free_center: true,
-      total_balls: 75,
-      number_range_min: 1,
-      number_range_max: 75,
-      config: {
-        theme: 'ANIMALITOS_VENEZUELA',
-        winning_patterns: ['LINE', 'FULL_HOUSE'],
-      },
-      is_active: true,
-      display_order: 3,
-    },
-    {
-      id: 'OBJETOS',
-      name: 'Bingo de Objetos Criollos',
-      description: 'Matriz temática 5x5 de centro libre con 75 objetos, símbolos patrios e iconos representativos de la cultura y tradición venezolana.',
-      grid_rows: 5,
-      grid_cols: 5,
-      has_free_center: true,
-      free_center: true,
-      total_balls: 75,
-      number_range_min: 1,
-      number_range_max: 75,
-      config: {
-        theme: 'CRIOLLO_VNZLA',
-        winning_patterns: ['LINE', 'FULL_HOUSE'],
-      },
-      is_active: true,
-      display_order: 4,
-    },
-    {
-      id: 'CHAPITAS',
-      name: 'Bingo Chapitas Criollo',
-      description: 'Modalidad oficial de 90 números conformada por 45 animalitos y 45 objetos criollos de Venezuela en matriz 3x9 con 15 números por cartón.',
-      grid_rows: 3,
-      grid_cols: 9,
-      has_free_center: false,
-      free_center: false,
-      total_balls: 90,
-      number_range_min: 1,
-      number_range_max: 90,
-      config: {
-        theme: 'CHAPITAS_45_45',
-        numbers_per_card: 15,
-        numbers_per_row: 5,
-        winning_patterns: ['ONE_LINE', 'TWO_LINES', 'BINGO'],
-      },
-      is_active: true,
-      display_order: 5,
-    },
-  ];
-
-  const [selectedModality, setSelectedModality] = useState<GameModality>(modalities[0]);
-
-  // Generador de matriz de muestra para la visualización del cartón
-  const generatePreviewMatrix = (mod: GameModality) => {
-    const rows = mod.grid_rows;
-    const cols = mod.grid_cols;
-    const matrix: (string | number)[][] = [];
-
-    const min = mod.number_range_min ?? 1;
-    const max = mod.number_range_max ?? mod.total_balls ?? 75;
-    const hasFree = mod.has_free_center ?? mod.free_center ?? false;
-
-    let counter = min;
-    for (let r = 0; r < rows; r++) {
-      const row: (string | number)[] = [];
-      for (let c = 0; c < cols; c++) {
-        if (hasFree && r === Math.floor(rows / 2) && c === Math.floor(cols / 2)) {
-          row.push('★ LIBRE');
-        } else {
-          row.push((counter % max) + 1);
-          counter += Math.floor((max - min) / (rows * cols)) || 3;
-        }
-      }
-      matrix.push(row);
-    }
-    return matrix;
-  };
-
-  const previewMatrix = generatePreviewMatrix(selectedModality);
+  const [selectedCode, setSelectedCode] = useState<ModalityCode>('BINGO_75');
+  const activeModality = MODALITIES.find((m) => m.code === selectedCode) || MODALITIES[0];
 
   return (
-    <section id="modalidades" className="py-24 bg-[#070D18] relative">
+    <section id="modalidades" className="py-20 bg-slate-950/70 border-t border-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 mb-2">
-              <Layers className="w-4 h-4 text-amber-400" />
-              <span>CONFIGURACIÓN DEL SISTEMA</span>
-              <span aria-hidden="true" className="text-slate-600">·</span>
-              <span className="text-slate-400">SECCIÓN 11 PROMPT MAESTRO</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-['Outfit'] tracking-tight">
-              5 Modalidades de Juego Oficiales
-            </h2>
-            <p className="mt-3 text-base text-slate-400 max-w-2xl">
-              Estructura registrada en base de datos PostgreSQL mediante la tabla <code className="text-amber-300 font-mono text-xs">game_modalities</code>.
-            </p>
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800 text-blue-300 text-xs font-semibold uppercase tracking-wider mb-3">
+            <Layers className="w-3.5 h-3.5" />
+            Configuración de Juego
           </div>
-
-          {/* Interactive Modality Tabs (Segmented Control) */}
-          <div className="flex items-center gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
-            {modalities.map((mod) => (
-              <button
-                key={mod.id}
-                onClick={() => setSelectedModality(mod)}
-                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
-                  selectedModality.id === mod.id
-                    ? 'bg-amber-400 text-[#070D18] shadow-md shadow-amber-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                {mod.name.split(' ')[0]} {mod.name.split(' ')[1] || ''}
-              </button>
-            ))}
-          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            5 Modalidades Oficiales
+          </h2>
+          <p className="mt-4 text-slate-400 text-base sm:text-lg">
+            Arquitectura multiformato diseñada desde el motor de base de datos para respetar las reglas tradicionales venezolanas e internacionales.
+          </p>
         </div>
 
-        {/* Bento Content Display */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
-          {/* Detailed Modality Info */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-mono text-xs font-bold text-amber-400">
-                  ID: {selectedModality.id}
+        {/* Pestañas de Selección de Modalidad */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
+          {MODALITIES.map((mod) => {
+            const isSelected = mod.code === selectedCode;
+            return (
+              <button
+                key={mod.code}
+                onClick={() => setSelectedCode(mod.code)}
+                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+                  isSelected
+                    ? 'bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/20 scale-105'
+                    : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
+                }`}
+              >
+                <span>{mod.name.split(' ')[0]} {mod.name.split(' ')[1]}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                  isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  {mod.gridRows}x{mod.gridCols}
                 </span>
-                <span className="text-xs text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Activa en BD
-                </span>
-              </div>
+              </button>
+            );
+          })}
+        </div>
 
-              <h3 className="text-2xl font-extrabold text-white font-['Outfit'] mb-3">
-                {selectedModality.name}
-              </h3>
-
-              <p className="text-sm text-slate-300 leading-relaxed mb-6">
-                {selectedModality.description}
-              </p>
-
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800/80 text-xs">
-                <div>
-                  <span className="text-slate-500 block">Estructura de Matriz:</span>
-                  <span className="font-semibold text-white text-sm">
-                    {selectedModality.grid_rows} x {selectedModality.grid_cols}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">Casilla Central:</span>
-                  <span className="font-semibold text-white text-sm">
-                    {selectedModality.free_center ? 'Libre (Free Center)' : 'Numerada Regular'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">Rango de Balotas:</span>
-                  <span className="font-semibold text-amber-300 text-sm">
-                    {selectedModality.number_range_min} al {selectedModality.number_range_max}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">Autoridad de Sorteo:</span>
-                  <span className="font-semibold text-blue-400 text-sm">
-                    100% Server Authoritative
-                  </span>
-                </div>
-              </div>
+        {/* Ficha Detallada de la Modalidad Seleccionada */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-slate-900/40 rounded-3xl p-6 sm:p-10 border border-slate-800/90">
+          {/* Información Técnica */}
+          <div className="lg:col-span-7">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold">
+                {activeModality.badge}
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                Total Elementos: {activeModality.totalElements}
+              </span>
             </div>
 
-            {/* Visual asset card */}
-            <div className="relative rounded-2xl overflow-hidden border border-slate-800 group h-44">
-              <img
-                src="/src/assets/images/modalities_bingo_card_1791180089281.jpg"
-                alt="Cartones de juego"
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#070D18] via-[#070D18]/50 to-transparent p-4 flex items-end">
-                <span className="text-xs font-semibold text-slate-200">
-                  Cartones digitales con serial único e idempotencia criptográfica
-                </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-white">
+              {activeModality.name}
+            </h3>
+            <p className="mt-3 text-slate-300 text-sm sm:text-base leading-relaxed">
+              {activeModality.tagline}
+            </p>
+            <p className="mt-3 text-slate-400 text-xs sm:text-sm">
+              {activeModality.description}
+            </p>
+
+            {/* Reglas de la Modalidad */}
+            <div className="mt-6 space-y-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400/90">
+                Reglas y Condiciones de Victoria:
+              </h4>
+              {activeModality.rules.map((rule, idx) => (
+                <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>{rule}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-slate-800/80 flex flex-wrap gap-4 text-xs text-slate-400">
+              <div>
+                <span className="text-slate-500">Filas / Columnas:</span>{' '}
+                <strong className="text-slate-200">{activeModality.gridRows} filas × {activeModality.gridCols} cols</strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Centro Libre (FREE):</span>{' '}
+                <strong className={activeModality.hasFreeCenter ? 'text-emerald-400' : 'text-slate-400'}>
+                  {activeModality.hasFreeCenter ? 'SÍ (Activado)' : 'NO (Lleno Completo)'}
+                </strong>
               </div>
             </div>
           </div>
 
-          {/* Interactive Card Matrix Preview */}
-          <div className="lg:col-span-7">
-            <div className="bg-gradient-to-b from-slate-900 to-[#0A1220] border-2 border-amber-500/20 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-              <div className="flex items-center justify-between pb-6 mb-6 border-b border-slate-800">
-                <div>
-                  <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                    Simulación Visual de Cartón Digital
-                  </span>
-                  <h4 className="text-xl font-bold text-white font-['Outfit']">
-                    {selectedModality.name}
-                  </h4>
-                </div>
-                <div className="text-right">
-                  <span className="font-mono text-xs text-amber-400 font-bold block">SERIAL BCV-77492-X</span>
-                  <span className="text-[11px] text-slate-500">Hash SHA-256 Verificado</span>
-                </div>
+          {/* Visualizador de Matriz de Cartón Representativo */}
+          <div className="lg:col-span-5 flex flex-col items-center">
+            <div className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 p-5 border border-slate-700/80 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <span className="text-xs font-bold tracking-wider text-amber-400 uppercase">
+                  Cartón Digital Certificado
+                </span>
+                <span className="text-[10px] font-mono text-slate-500">
+                  SERIAL: BCV-78419
+                </span>
               </div>
 
               {/* Grid Matrix Visualizer */}
               <div
-                className="grid gap-2 sm:gap-3"
-                style={{
-                  gridTemplateColumns: `repeat(${selectedModality.grid_cols}, minmax(0, 1fr))`,
-                }}
+                className={`grid gap-2 ${
+                  activeModality.gridCols === 5 ? 'grid-cols-5' : 'grid-cols-5'
+                }`}
               >
-                {previewMatrix.map((row, rIdx) =>
-                  row.map((cell, cIdx) => {
-                    const isFree = cell === '★ LIBRE';
-                    return (
-                      <div
-                        key={`${rIdx}-${cIdx}`}
-                        className={`aspect-square flex items-center justify-center rounded-xl font-['Outfit'] font-extrabold text-sm sm:text-base border transition-all ${
-                          isFree
-                            ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-[#070D18] border-amber-300 shadow-md shadow-amber-500/30'
-                            : 'bg-slate-950/80 text-white border-slate-800 hover:border-amber-400/40'
-                        }`}
-                      >
-                        {cell}
-                      </div>
-                    );
-                  })
-                )}
+                {Array.from({ length: activeModality.gridRows * activeModality.gridCols }).map((_, i) => {
+                  const row = Math.floor(i / activeModality.gridCols);
+                  const col = i % activeModality.gridCols;
+                  const isCenter = activeModality.hasFreeCenter && row === 2 && col === 2;
+
+                  let displayContent = `${(i + 1) * 3}`;
+                  if (activeModality.code === 'ANIMALITOS') {
+                    const animalSample = ['🐬', '🐋', '🐏', '🐂', '🐅', '🐊', '🦁', '🦉', '🦜', '🐪', '🐎', '🦓'];
+                    displayContent = isCenter ? '⭐ FREE' : animalSample[i % animalSample.length];
+                  } else if (activeModality.code === 'OBJETOS') {
+                    const objSample = ['🫓', '🎸', '🪇', '🪵', '🧺', '☀️', '🍲', '☕', '🥁', '🌴', '🛖', '👒'];
+                    displayContent = isCenter ? '⭐ CRIOLLO' : objSample[i % objSample.length];
+                  } else if (activeModality.code === 'CHAPITAS') {
+                    displayContent = `🔘 ${i * 4 + 1}`;
+                  } else if (isCenter) {
+                    displayContent = 'FREE';
+                  }
+
+                  return (
+                    <div
+                      key={i}
+                      className={`h-12 sm:h-14 rounded-lg flex flex-col items-center justify-center font-bold text-xs sm:text-sm border transition-all ${
+                        isCenter
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 font-extrabold shadow-md shadow-amber-500/20'
+                          : 'bg-slate-800/80 hover:bg-slate-800 text-slate-200 border-slate-700/60'
+                      }`}
+                    >
+                      <span className="text-center truncate px-0.5">{displayContent}</span>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Generación respaldada por la tabla <span className="font-mono text-slate-300">card_numbers</span>
+              <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
+                <span className="text-[11px] text-slate-400">
+                  Matriz inmutable generada por el servidor (Server Authoritative)
                 </span>
-                <span className="font-mono text-slate-500">IDEMPOTENCY: READY</span>
               </div>
             </div>
           </div>
-
         </div>
-
       </div>
     </section>
   );

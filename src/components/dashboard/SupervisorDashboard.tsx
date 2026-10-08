@@ -87,7 +87,7 @@ export const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ onEnte
               Panel de SUPERVISOR
             </h1>
             <div className="mt-2 flex items-center gap-3 text-xs text-slate-400 font-mono">
-              <span>Identidad: <strong className="text-white">{user?.email || 'supervisor@bingoclub.com.ve'}</strong></span>
+              <span>Identidad: <strong className="text-white">{user?.email || 'supervisor@bingoclubvnzla.vercel.app'}</strong></span>
               <span aria-hidden="true">·</span>
               <span>Jerarquía: <strong className="text-sky-400">SUPERVISOR (Nivel 30)</strong></span>
             </div>
