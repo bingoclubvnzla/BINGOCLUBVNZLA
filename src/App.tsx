@@ -13,6 +13,8 @@ import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard'
 import { SupervisorDashboard } from './components/dashboard/SupervisorDashboard';
 import { LivePlayRoom } from './components/LivePlayRoom';
 import { AuthModal } from './components/AuthModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { FloatingBallsBackground } from './components/FloatingBallsBackground';
 import { ShieldAlert, Lock, Loader2 } from 'lucide-react';
 import {
   createDraw,
@@ -544,17 +546,29 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      <Navbar
-        onOpenAuth={openAuth}
-        activeView={activeView}
-        setActiveView={(v) => navigateTo(v)}
-        onOpenDiagnostic={() => setDiagnosticOpen(true)}
-      />
+    <div className="min-h-screen bg-[#060919] text-slate-100 flex flex-col font-sans relative overflow-x-hidden selection:bg-amber-400 selection:text-slate-950">
+      {/* Fondo de esferas 3D de bingo y partículas de casino */}
+      <FloatingBallsBackground />
 
-      <main className="flex-1">
-        {renderActiveView()}
-      </main>
+      <div className="relative z-10 flex flex-col flex-1">
+        <Navbar
+          onOpenAuth={openAuth}
+          activeView={activeView}
+          setActiveView={(v) => navigateTo(v)}
+          onOpenDiagnostic={() => setDiagnosticOpen(true)}
+        />
+
+        <main className="flex-1">
+          {renderActiveView()}
+        </main>
+
+        <MobileBottomNav
+          activeView={activeView}
+          setActiveView={(v) => navigateTo(v)}
+          isAuthenticated={isAuthenticated}
+          onOpenAuth={openAuth}
+        />
+      </div>
 
       <AuthModal
         isOpen={authModalOpen}

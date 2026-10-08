@@ -102,46 +102,46 @@ export const ModalityCard: React.FC<ModalityCardProps> = ({ modality, onSelect, 
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative flex flex-col justify-between rounded-2xl border border-slate-800/80 bg-gradient-to-b from-slate-900/90 via-slate-900/60 to-slate-950/90 p-6 transition-all duration-300 ${theme.accentBorder} hover:shadow-xl ${theme.accentGlow} hover:-translate-y-0.5 cursor-pointer`}
+      className={`group relative flex flex-col justify-between rounded-3xl border border-slate-700/60 bg-gradient-to-b from-slate-900/95 via-slate-900/80 to-[#060919] p-6 transition-all duration-300 ${theme.accentBorder} hover:shadow-2xl ${theme.accentGlow} hover:-translate-y-1 cursor-pointer overflow-hidden`}
     >
-      {/* Sutil acento superior de color casino criollo */}
-      <div className="absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent group-hover:via-amber-400/60 transition-all" />
+      {/* Sutil acento superior de color casino criollo con animación de brillo */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent group-hover:via-amber-300 transition-all opacity-70 group-hover:opacity-100" />
 
       <div>
         <div className="flex items-start justify-between">
-          <div className={`flex h-11 w-11 items-center justify-center rounded-xl border ${theme.iconBg} shadow-inner`}>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border-2 ${theme.iconBg} shadow-lg transition-transform group-hover:scale-110`}>
             {theme.icon}
           </div>
 
-          {/* Zero-pill: Clean unboxed metadata with subtle typographic separators */}
-          <div className="text-right text-xs text-slate-400 font-mono tracking-tight">
-            <span>{modality.grid_rows}x{modality.grid_cols}</span>
-            <span className="mx-1.5 opacity-40" aria-hidden="true">·</span>
-            <span className="text-slate-300 font-semibold">{modality.total_balls || 75} balotas</span>
+          {/* Metadata de cuadrícula y balotas */}
+          <div className="text-right text-xs font-mono font-bold tracking-tight">
+            <span className="text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">{modality.grid_rows}x{modality.grid_cols}</span>
+            <span className="mx-1.5 opacity-40 text-slate-500" aria-hidden="true">·</span>
+            <span className="text-slate-200">{modality.total_balls || 75} balotas</span>
           </div>
         </div>
 
         <div className="mt-5">
-          <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors font-display tracking-tight">
+          <h3 className="text-xl font-black text-white group-hover:text-amber-300 transition-colors font-display tracking-tight">
             {modality.name}
           </h3>
-          <p className="mt-1 text-xs font-medium text-amber-400/80 font-mono">
+          <p className="mt-1 text-xs font-bold text-amber-400 font-mono">
             {theme.tagline}
           </p>
-          <p className="mt-2.5 text-xs text-slate-400 leading-relaxed line-clamp-3">
+          <p className="mt-2.5 text-xs text-slate-300 leading-relaxed line-clamp-3">
             {modality.description}
           </p>
         </div>
       </div>
 
       {/* Reglas oficiales y características técnicas */}
-      <div className="mt-5 pt-3.5 border-t border-slate-850">
-        <div className="flex items-center justify-between text-xs mb-3">
-          <span className="text-[11px] font-medium text-slate-300">
+      <div className="mt-5 pt-4 border-t border-slate-800">
+        <div className="flex items-center justify-between text-xs mb-3.5">
+          <span className="text-[11px] font-bold text-slate-300">
             {theme.prizesRule}
           </span>
-          <span className="text-[10px] font-mono text-slate-400">
-            {modality.has_free_center ? 'Centro Libre' : 'Sin libre'}
+          <span className="text-[10px] font-mono font-bold text-amber-400/90 bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-500/30">
+            {modality.has_free_center ? '⭐ Centro Libre' : 'Sin libre'}
           </span>
         </div>
 
@@ -149,7 +149,7 @@ export const ModalityCard: React.FC<ModalityCardProps> = ({ modality, onSelect, 
           {onPlay && (
             <button
               onClick={handlePlayClick}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 py-2.5 px-3 text-xs font-bold text-slate-950 transition-all shadow-md shadow-amber-500/10 cursor-pointer active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl btn-gaming-gold shine-sweep py-2.5 px-3 text-xs font-black text-slate-950 transition-all shadow-lg cursor-pointer"
             >
               <span>JUGAR SALA</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -162,7 +162,7 @@ export const ModalityCard: React.FC<ModalityCardProps> = ({ modality, onSelect, 
                 e.stopPropagation();
                 handleCardClick();
               }}
-              className="rounded-xl border border-slate-700 hover:border-slate-600 bg-slate-850 hover:bg-slate-800 py-2.5 px-3 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
+              className="rounded-xl border border-slate-700 hover:border-amber-400/50 bg-slate-800/90 hover:bg-slate-750 py-2.5 px-3.5 text-xs font-bold text-slate-200 transition-colors cursor-pointer"
             >
               Detalles
             </button>

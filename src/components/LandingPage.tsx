@@ -123,10 +123,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-7 max-w-2xl">
-              {/* Tagline / Distintivo venezolano */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-300 mb-5 backdrop-blur-sm shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                <span>Lobby Oficial · Tradición y Tecnología Criolla</span>
+              {/* Kicker de identidad venezolana */}
+              <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-amber-400 mb-4">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Lobby Oficial</span>
+                <span className="text-slate-600" aria-hidden="true">·</span>
+                <span>Tradición y Tecnología Criolla</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white font-display text-balance leading-none">

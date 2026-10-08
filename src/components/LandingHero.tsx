@@ -64,14 +64,14 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             <>
               <button
                 onClick={() => onOpenAuth('register')}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 shadow-xl shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-black text-slate-950 btn-gaming-gold shine-sweep shadow-2xl flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 text-slate-950 animate-bounce" />
                 REGISTRARME
               </button>
               <button
                 onClick={() => onOpenAuth('login')}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold text-slate-200 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-500 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-bold text-slate-100 bg-slate-900/90 hover:bg-slate-800 border-2 border-slate-700/80 hover:border-amber-400/60 shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 INICIAR SESIÓN
               </button>
@@ -79,7 +79,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           ) : (
             <button
               onClick={onExploreModalities}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 hover:from-amber-300 shadow-xl shadow-amber-500/25 transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-black text-slate-950 btn-gaming-gold shine-sweep shadow-2xl flex items-center justify-center gap-2 cursor-pointer"
             >
               EXPLORAR SALAS Y MODALIDADES
               <ChevronRight className="w-5 h-5" />
@@ -88,7 +88,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
           <button
             onClick={onExploreModalities}
-            className="w-full sm:w-auto px-6 py-4 rounded-xl text-sm font-semibold text-slate-300 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+            className="w-full sm:w-auto px-6 py-4 rounded-2xl text-sm font-bold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             Ver 5 Modalidades Criollas
           </button>
@@ -96,35 +96,35 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
         {/* Pilares Técnicos de la Fundación */}
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-left">
-            <div className="w-9 h-9 rounded-xl bg-blue-900/50 border border-blue-700/40 flex items-center justify-center text-blue-400 mb-3">
-              <Lock className="w-4 h-4" />
+          <div className="p-4.5 rounded-2xl glass-card-interactive text-left">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 mb-3 shadow-sm">
+              <Lock className="w-5 h-5" />
             </div>
-            <h4 className="text-sm font-bold text-slate-200">Server Authoritative</h4>
+            <h4 className="text-sm font-extrabold text-white">Server Authoritative</h4>
             <p className="text-xs text-slate-400 mt-1">El cliente nunca decide saldo, números ni cartones.</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-left">
-            <div className="w-9 h-9 rounded-xl bg-amber-900/50 border border-amber-700/40 flex items-center justify-center text-amber-400 mb-3">
-              <Grid className="w-4 h-4" />
+          <div className="p-4.5 rounded-2xl glass-card-interactive text-left">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 mb-3 shadow-sm">
+              <Grid className="w-5 h-5" />
             </div>
-            <h4 className="text-sm font-bold text-slate-200">5 Modalidades</h4>
+            <h4 className="text-sm font-extrabold text-white">5 Modalidades</h4>
             <p className="text-xs text-slate-400 mt-1">Bingo 75, 90, Animalitos, Objetos y Chapitas.</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-left">
-            <div className="w-9 h-9 rounded-xl bg-emerald-900/50 border border-emerald-700/40 flex items-center justify-center text-emerald-400 mb-3">
-              <Zap className="w-4 h-4" />
+          <div className="p-4.5 rounded-2xl glass-card-interactive text-left">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-3 shadow-sm">
+              <Zap className="w-5 h-5" />
             </div>
-            <h4 className="text-sm font-bold text-slate-200">Supabase Realtime</h4>
+            <h4 className="text-sm font-extrabold text-white">Supabase Realtime</h4>
             <p className="text-xs text-slate-400 mt-1">Canales seguros y aislados por sala y jugador.</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-left">
-            <div className="w-9 h-9 rounded-xl bg-red-900/50 border border-red-700/40 flex items-center justify-center text-red-400 mb-3">
-              <ShieldCheck className="w-4 h-4" />
+          <div className="p-4.5 rounded-2xl glass-card-interactive text-left">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 mb-3 shadow-sm">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <h4 className="text-sm font-bold text-slate-200">Seguridad RBAC</h4>
+            <h4 className="text-sm font-extrabold text-white">Seguridad RBAC</h4>
             <p className="text-xs text-slate-400 mt-1">5 niveles de acceso con RLS en cada tabla.</p>
           </div>
         </div>

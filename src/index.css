@@ -3,8 +3,9 @@
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #050b14;
+    background-color: #060919;
     color: #f1f5f9;
+    overflow-x: hidden;
   }
 }
 
@@ -12,9 +13,23 @@
   font-family: 'Syne', sans-serif;
 }
 
-/* Casino Criollo Luxury Gold Utilities */
+/* ==============================================================================
+   LUXURY CASINO & BINGO TEXT / SURFACE UTILITIES
+   ============================================================================== */
 .gold-text-gradient {
   background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.neon-text-gradient {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.fire-text-gradient {
+  background: linear-gradient(135deg, #fef08a 0%, #f97316 45%, #ef4444 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -24,12 +39,12 @@
 }
 
 .gold-surface {
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .gold-glow {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.35);
 }
 
 .criollo-accent-bar {
@@ -37,45 +52,388 @@
 }
 
 .celebration-glow {
-  box-shadow: 0 0 50px -10px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 50px -10px rgba(245, 158, 11, 0.45);
 }
 
 .chapita-disk {
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.25), 0 4px 8px -1px rgba(0, 0, 0, 0.6);
 }
 
-/* Casino Ball Sphere 3D Visual Depth */
+/* ==============================================================================
+   GLASSMORPHISM & GAMING CARDS
+   ============================================================================== */
+.glass-panel {
+  background: rgba(13, 20, 41, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-panel-gold {
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), rgba(15, 23, 42, 0.92));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.glass-card-interactive {
+  background: linear-gradient(160deg, rgba(26, 35, 68, 0.75) 0%, rgba(10, 15, 33, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-interactive:hover {
+  border-color: rgba(245, 158, 11, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px -10px rgba(245, 158, 11, 0.18), 0 0 20px -5px rgba(56, 189, 248, 0.15);
+}
+
+/* ==============================================================================
+   3D BINGO BALLS (INSPIRADAS EN LAS IMÁGENES OFICIALES)
+   ============================================================================== */
 .ball-sphere-gold {
-  background: radial-gradient(circle at 35% 30%, #fffbeb 0%, #fde047 25%, #f59e0b 60%, #92400e 95%);
-  box-shadow: inset -4px -6px 12px rgba(0, 0, 0, 0.45), 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+  background: radial-gradient(circle at 32% 28%, #ffffff 0%, #fef08a 20%, #f59e0b 55%, #92400e 88%, #451a03 100%);
+  box-shadow: inset -5px -7px 14px rgba(0, 0, 0, 0.5), inset 3px 3px 6px rgba(255, 255, 255, 0.6), 0 12px 28px -5px rgba(245, 158, 11, 0.45);
 }
 
 .ball-sphere-navy {
-  background: radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 45%, #1e3a8a 80%, #0f172a 100%);
-  box-shadow: inset -4px -6px 12px rgba(0, 0, 0, 0.5), 0 10px 25px -5px rgba(37, 99, 235, 0.35);
+  background: radial-gradient(circle at 32% 28%, #dbeafe 0%, #60a5fa 25%, #2563eb 55%, #1e3a8a 85%, #0f172a 100%);
+  box-shadow: inset -5px -7px 14px rgba(0, 0, 0, 0.55), inset 3px 3px 6px rgba(255, 255, 255, 0.5), 0 12px 28px -5px rgba(37, 99, 235, 0.4);
 }
 
 .ball-sphere-criollo {
-  background: radial-gradient(circle at 35% 30%, #fef3c7 0%, #f59e0b 40%, #047857 85%, #064e3b 100%);
-  box-shadow: inset -4px -6px 12px rgba(0, 0, 0, 0.45), 0 10px 25px -5px rgba(16, 185, 129, 0.35);
+  background: radial-gradient(circle at 32% 28%, #fef3c7 0%, #f59e0b 35%, #059669 75%, #064e3b 100%);
+  box-shadow: inset -5px -7px 14px rgba(0, 0, 0, 0.5), inset 3px 3px 6px rgba(255, 255, 255, 0.6), 0 12px 28px -5px rgba(16, 185, 129, 0.4);
 }
 
-/* Micro-animations with reduced motion compliance */
+.ball-3d-b {
+  background: radial-gradient(circle at 32% 28%, #dbeafe 0%, #3b82f6 30%, #1d4ed8 65%, #172554 100%);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.5), inset 2px 2px 4px rgba(255, 255, 255, 0.6), 0 8px 18px -4px rgba(37, 99, 235, 0.5);
+}
+
+.ball-3d-i {
+  background: radial-gradient(circle at 32% 28%, #fee2e2 0%, #ef4444 30%, #b91c1c 65%, #450a0a 100%);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.5), inset 2px 2px 4px rgba(255, 255, 255, 0.6), 0 8px 18px -4px rgba(239, 68, 68, 0.5);
+}
+
+.ball-3d-n {
+  background: radial-gradient(circle at 32% 28%, #fffbeb 0%, #facc15 30%, #d97706 65%, #713f12 100%);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.45), inset 2px 2px 4px rgba(255, 255, 255, 0.7), 0 8px 18px -4px rgba(245, 158, 11, 0.5);
+}
+
+.ball-3d-g {
+  background: radial-gradient(circle at 32% 28%, #dcfce7 0%, #22c55e 30%, #15803d 65%, #052e16 100%);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.5), inset 2px 2px 4px rgba(255, 255, 255, 0.6), 0 8px 18px -4px rgba(34, 197, 94, 0.5);
+}
+
+.ball-3d-o {
+  background: radial-gradient(circle at 32% 28%, #f3e8ff 0%, #a855f7 30%, #7e22ce 65%, #3b0764 100%);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.5), inset 2px 2px 4px rgba(255, 255, 255, 0.6), 0 8px 18px -4px rgba(168, 85, 247, 0.5);
+}
+
+.ball-3d-white {
+  background: radial-gradient(circle at 32% 28%, #ffffff 0%, #f1f5f9 40%, #cbd5e1 75%, #64748b 100%);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.9), 0 8px 18px -4px rgba(203, 213, 225, 0.4);
+}
+
+/* ==============================================================================
+   AUTHENTIC BINGO DAUBER CHIP / FICHA MARCADORA (COMO EN LAS FOTOS)
+   ============================================================================== */
+.dauber-marked-gold {
+  background: radial-gradient(circle at 32% 30%, #fffbeb 0%, #fbbf24 25%, #f59e0b 60%, #b45309 95%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 5px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(245, 158, 11, 0.45);
+  animation: dauberPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dauber-chip-ruby {
+  background: radial-gradient(circle at 32% 30%, #fee2e2 0%, #f43f5e 25%, #e11d48 60%, #881337 95%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 5px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(225, 29, 72, 0.5);
+  animation: dauberPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dauber-chip-emerald {
+  background: radial-gradient(circle at 32% 30%, #dcfce7 0%, #34d399 25%, #059669 60%, #064e3b 95%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 5px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(16, 185, 129, 0.45);
+  animation: dauberPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes dauberPop {
+  0% {
+    transform: scale(0.6) rotate(-6deg);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(1.18) rotate(3deg);
+  }
+  100% {
+    transform: scale(1.05) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* ==============================================================================
+   CARTÓN DE BINGO VIBRANTE & ESTILIZADO
+   ============================================================================== */
+.bingo-card-frame {
+  background: linear-gradient(165deg, #111833 0%, #0a0e23 50%, #050714 100%);
+  border: 2px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.7), 0 0 25px -5px rgba(245, 158, 11, 0.15);
+  border-radius: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.bingo-card-frame-won {
+  background: linear-gradient(165deg, #2a1b02 0%, #150f01 50%, #080500 100%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 20px 45px -5px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.25);
+  border-radius: 1.5rem;
+  animation: wonCardPulse 2s ease-in-out infinite;
+}
+
+@keyframes wonCardPulse {
+  0%, 100% {
+    box-shadow: 0 20px 45px -5px rgba(245, 158, 11, 0.4), 0 0 30px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 25px 55px -5px rgba(245, 158, 11, 0.6), 0 0 50px rgba(245, 158, 11, 0.4);
+  }
+}
+
+/* Letras B-I-N-G-O estilo físico de casino */
+.b75-header-b {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.b75-header-i {
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.b75-header-n {
+  background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
+  color: #1e1b4b;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.b75-header-g {
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.b75-header-o {
+  background: linear-gradient(180deg, #a855f7 0%, #7e22ce 100%);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Casillas del cartón */
+.bingo-grid-cell {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 0.875rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bingo-grid-cell:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(245, 158, 11, 0.35);
+  transform: scale(1.03);
+}
+
+/* Casilla Central Libre */
+.bingo-cell-free {
+  background: radial-gradient(circle at 50% 40%, rgba(250, 204, 21, 0.25) 0%, rgba(217, 119, 6, 0.15) 70%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.6);
+  box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.3), 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+/* ==============================================================================
+   BOTONES LLAMATIVOS Y CONVERTIDORES (CTA GAMING)
+   ============================================================================== */
+.btn-gaming-gold {
+  background: linear-gradient(135deg, #fef08a 0%, #f59e0b 45%, #d97706 100%);
+  color: #0b0f19;
+  font-weight: 900;
+  box-shadow: 0 8px 22px -4px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-gaming-gold:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #fbbf24 40%, #ea580c 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px -4px rgba(245, 158, 11, 0.6), 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.btn-gaming-gold:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.btn-gaming-coral {
+  background: linear-gradient(135deg, #ff7e79 0%, #ef4444 45%, #dc2626 100%);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 8px 22px -4px rgba(239, 68, 68, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-gaming-coral:hover {
+  background: linear-gradient(135deg, #fca5a5 0%, #f87171 40%, #b91c1c 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px -4px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.btn-gaming-emerald {
+  background: linear-gradient(135deg, #86efac 0%, #10b981 45%, #047857 100%);
+  color: #062419;
+  font-weight: 800;
+  box-shadow: 0 8px 22px -4px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-gaming-emerald:hover {
+  background: linear-gradient(135deg, #bbf7d0 0%, #34d399 40%, #065f46 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px -4px rgba(16, 185, 129, 0.6);
+}
+
+/* Efecto de barrido de luz metálico */
+.shine-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-sweep::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  animation: shineMove 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes shineMove {
+  0% {
+    left: -60%;
+  }
+  35%, 100% {
+    left: 140%;
+  }
+}
+
+/* ==============================================================================
+   ANIMACIONES FLOTANTES (3D FLOATING BALLS EN EL FONDO)
+   ============================================================================== */
+@keyframes floatBall1 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(10deg);
+  }
+}
+
+@keyframes floatBall2 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-24px) rotate(-12deg);
+  }
+}
+
+@keyframes floatBall3 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(8deg);
+  }
+}
+
+.animate-float-1 {
+  animation: floatBall1 6s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: floatBall2 8s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: floatBall3 7s ease-in-out infinite;
+}
+
+.live-pulse-badge {
+  animation: livePulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
 
 .animate-shimmer {
-  animation: shimmer 2.5s infinite;
+  animation: shimmer 2.2s infinite;
 }
 
+/* ==============================================================================
+   ACCESIBILIDAD / REDUCED MOTION
+   ============================================================================== */
 @media (prefers-reduced-motion: reduce) {
   .animate-shimmer,
   .animate-pulse,
   .animate-bounce,
-  .animate-spin {
+  .animate-spin,
+  .live-pulse-badge,
+  .animate-float-1,
+  .animate-float-2,
+  .animate-float-3,
+  .shine-sweep::after,
+  .dauber-marked-gold,
+  .dauber-chip-ruby,
+  .dauber-chip-emerald {
     animation: none !important;
   }
 }
+
+
 

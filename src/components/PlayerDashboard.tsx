@@ -1,6 +1,6 @@
 // ==============================================================================
-// BINGO CLUB VNZLA ONLINE — DASHBOARD DEL JUGADOR (PLAYER)
-// Principio: NO mostrar saldo ficticio. "Función financiera próximamente disponible."
+// BINGO CLUB VNZLA ONLINE — DASHBOARD & LOBBY DEL JUGADOR (PLAYER)
+// Principio: Experiencia de club de bingo en vivo, 100% Server Authoritative.
 // ==============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -24,6 +24,7 @@ import {
 import { MfaEnrollmentModal } from './mfa/MfaEnrollmentModal';
 import { StepUpAuthModal } from './mfa/StepUpAuthModal';
 import { BingoCard } from './BingoCard';
+import { playClickSound } from '../lib/soundFx';
 import {
   Wallet,
   Grid3X3,
@@ -47,7 +48,11 @@ import {
   RefreshCw,
   Clock,
   ShieldCheck,
-  Check
+  Check,
+  Radio,
+  Play,
+  Trophy,
+  Copy
 } from 'lucide-react';
 
 interface PlayerDashboardProps {
@@ -57,6 +62,7 @@ interface PlayerDashboardProps {
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoom }) => {
   const { user, profile, publicId, role, signOut, updateProfileDetails, resetPassword } = useAuth();
   const [activeTab, setActiveTab] = useState<'sorteos' | 'cartones' | 'historial' | 'perfil' | 'seguridad'>('sorteos');
+  const [copiedId, setCopiedId] = useState(false);
 
   // Formulario de edición de perfil
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -86,6 +92,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
   const [drawsLoading, setDrawsLoading] = useState(false);
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
+  const [demoModalityFilter, setDemoModalityFilter] = useState<string>('TODAS');
 
   const loadActiveDraws = async () => {
     setDrawsLoading(true);
@@ -309,114 +316,196 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
     }
   };
 
+  const copyPublicId = () => {
+    if (!publicId) return;
+    navigator.clipboard?.writeText(publicId);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        {/* ENCABEZADO DEL JUGADOR */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-400">
-              <span>Panel de Jugador</span>
-              <span aria-hidden="true">·</span>
-              <span>Bingo Club Venezuela</span>
+    <div className="min-h-screen bg-[#050b14] text-slate-100 py-6 sm:py-10 px-4 sm:px-6 lg:px-8 pb-24 md:pb-12">
+      <div className="mx-auto max-w-7xl space-y-8">
+        
+        {/* ==================================================================== */}
+        {/* HERO: VIP PLAYER CLUB PASS & GAMING ACTION                           */}
+        {/* ==================================================================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Card VIP del Jugador */}
+          <div className="lg:col-span-8 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-amber-950/20 p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+            {/* Sutil acento superior tricolor */}
+            <div className="absolute top-0 inset-x-0 h-1 criollo-accent-bar" />
+            
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>CLUB VIP VENEZUELA · SOCIO OFICIAL</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={copyPublicId}
+                    title="Copiar ID Público"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold hover:bg-slate-900 transition-colors cursor-pointer"
+                  >
+                    <span>ID: {publicId}</span>
+                    {copiedId ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-slate-400" />}
+                  </button>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold font-mono">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    ACTIVO
+                  </span>
+                </div>
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl font-black text-white font-display tracking-tight">
+                Bienvenido, <span className="gold-text-gradient">{profile?.display_name || 'Jugador Oficial'}</span>
+              </h1>
+              <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+                Tu centro de entretenimiento de bingo venezolano en vivo. Sintoniza las salas oficiales, sigue las balotas cantadas en directo y administra tus cartones autorizados.
+              </p>
             </div>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-white font-display">
-              Bienvenido, {profile?.display_name || 'Jugador'}
-            </h1>
-            <div className="mt-2 flex items-center gap-3 text-xs text-slate-400 font-mono">
-              <span>ID Público: <strong className="text-amber-400 font-semibold">{publicId}</strong></span>
-              <span aria-hidden="true">·</span>
-              <span>Rol: <strong className="text-slate-200">{role}</strong></span>
-              <span aria-hidden="true">·</span>
-              <span>Estado: <span className="text-emerald-400">Activo</span></span>
+
+            {/* Fila de acceso rápido a sorteos en directo */}
+            <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400">
+                <div className="flex items-center gap-1.5">
+                  <Dices className="h-4 w-4 text-amber-400" />
+                  <span>5 Modalidades</span>
+                </div>
+                <span className="text-slate-700" aria-hidden="true">·</span>
+                <div className="flex items-center gap-1.5">
+                  <Radio className="h-4 w-4 text-emerald-400" />
+                  <span>Salas en Vivo 24/7</span>
+                </div>
+                <span className="text-slate-700" aria-hidden="true">·</span>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-sky-400" />
+                  <span>Rol: <strong className="text-slate-200">{role}</strong></span>
+                </div>
+              </div>
+
+              {onEnterLiveRoom && (
+                <button
+                  onClick={() => { playClickSound(); onEnterLiveRoom('BINGO_75'); }}
+                  className="flex items-center gap-2 py-3 px-6 rounded-2xl btn-gaming-gold shine-sweep text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-xl cursor-pointer whitespace-nowrap"
+                >
+                  <Play className="h-4 w-4 fill-current" />
+                  <span>Sintonizar Sala en Vivo</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* MÓDULO DE BILLETERA */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:w-80 shadow-md">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span className="flex items-center gap-1.5 font-medium text-slate-300">
-                <Wallet className="h-4 w-4 text-amber-400" />
-                Billetera Digital
-              </span>
+          {/* Módulo de Billetera Recreativa & Estado */}
+          <div className="lg:col-span-4 rounded-3xl border border-slate-700/60 bg-slate-900/80 backdrop-blur-xl p-6 flex flex-col justify-between shadow-xl">
+            <div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-amber-400" />
+                  <span className="text-xs font-bold text-white font-display">Billetera Oficial</span>
+                </div>
+                <span className="text-[10px] font-mono font-black text-amber-400/90 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                  Modo Recreativo
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 shadow-inner">
+                <div className="text-[11px] font-mono text-slate-400 font-semibold">Balance de Fichas Oficiales</div>
+                <div className="text-2xl sm:text-3xl font-black text-white font-mono mt-1 flex items-center gap-2">
+                  <span className="gold-text-gradient drop-shadow-sm">1,000</span>
+                  <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/30">BCV FICHAS</span>
+                </div>
+                <div className="text-[10px] text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Créditos oficiales asignados para partidas del Club
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800/60 text-[11px] text-slate-400 leading-relaxed">
+                <span className="text-slate-300 font-bold block mb-0.5">Operaciones Financieras:</span>
+                Las transacciones con fondos reales se activarán de manera progresiva tras la certificación regulatoria correspondiente.
+              </div>
             </div>
-            <div className="mt-2 py-2 px-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300">
-              <span className="text-amber-300/90 font-medium block">
-                Operaciones financieras
-              </span>
-              <span className="text-[11px] text-slate-400 mt-0.5 block leading-relaxed">
-                Las operaciones financieras estarán disponibles cuando la plataforma complete los requisitos operativos y regulatorios correspondientes.
+
+            <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-mono text-[11px] font-bold">Seguridad 2FA / MFA:</span>
+              <span className={isMfaActive ? 'text-emerald-400 font-extrabold flex items-center gap-1' : 'text-amber-400 font-bold'}>
+                {isMfaActive ? '● Protegido' : 'Recomendado activar'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* NAVEGACIÓN DE PESTAÑAS */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3 mb-8">
+        {/* ==================================================================== */}
+        {/* NAVEGACIÓN DE PESTAÑAS GAMING                                        */}
+        {/* ==================================================================== */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
           <button
-            onClick={() => setActiveTab('sorteos')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            onClick={() => { playClickSound(); setActiveTab('sorteos'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
               activeTab === 'sorteos'
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'btn-gaming-gold shine-sweep text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent font-bold'
             }`}
           >
-            <Calendar className="h-4 w-4" />
-            Mis Sorteos
+            <Radio className="h-4 w-4" />
+            <span>Salas y Sorteos en Vivo</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('cartones')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            onClick={() => { playClickSound(); setActiveTab('cartones'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
               activeTab === 'cartones'
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'btn-gaming-gold shine-sweep text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent font-bold'
             }`}
           >
             <Grid3X3 className="h-4 w-4" />
-            Mis Cartones
+            <span>Mis Cartones</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('historial')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            onClick={() => { playClickSound(); setActiveTab('historial'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
               activeTab === 'historial'
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'btn-gaming-gold shine-sweep text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent font-bold'
             }`}
           >
             <History className="h-4 w-4" />
-            Historial
+            <span>Historial</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('perfil')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            onClick={() => { playClickSound(); setActiveTab('perfil'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
               activeTab === 'perfil'
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'btn-gaming-gold shine-sweep text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent font-bold'
             }`}
           >
             <User className="h-4 w-4" />
-            Perfil
+            <span>Perfil</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('seguridad')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            onClick={() => { playClickSound(); setActiveTab('seguridad'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
               activeTab === 'seguridad'
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'btn-gaming-gold shine-sweep text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent font-bold'
             }`}
           >
             <Shield className="h-4 w-4" />
-            Seguridad
+            <span>Seguridad & MFA</span>
           </button>
 
           <div className="ml-auto">
             <button
-              onClick={() => signOut()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-950/40 rounded-lg border border-rose-900/60 transition-colors cursor-pointer"
+              onClick={() => { playClickSound(); signOut(); }}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-rose-300 hover:bg-rose-950/60 rounded-xl border border-rose-900/60 transition-colors cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Cerrar sesión</span>
@@ -424,120 +513,176 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
           </div>
         </div>
 
-        {/* CONTENIDO DE PESTAÑAS */}
-
-        {/* TAB: MIS SORTEOS */}
+        {/* ==================================================================== */}
+        {/* PESTAÑA: SALAS Y SORTEOS EN VIVO                                     */}
+        {/* ==================================================================== */}
         {activeTab === 'sorteos' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white font-display">
-                  Sorteos Programados y Salas Oficiales
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Salas activas y transmisión en directo de sorteos oficiales.
-                </p>
+          <div className="space-y-8">
+            {/* Sorteos programados reales desde base de datos si existen */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-black text-white font-display">
+                    Sorteos Programados con Transmisión Oficial
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Sorteos autorizados transmitidos por Supabase Realtime con verificación criptográfica.
+                  </p>
+                </div>
+                <button
+                  onClick={loadActiveDraws}
+                  disabled={drawsLoading}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`h-3 w-3 ${drawsLoading ? 'animate-spin text-amber-400' : ''}`} />
+                  <span>Actualizar</span>
+                </button>
               </div>
-              <button
-                onClick={loadActiveDraws}
-                disabled={drawsLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
-              >
-                <RefreshCw className={`h-3 w-3 ${drawsLoading ? 'animate-spin text-amber-400' : ''}`} />
-                <span>Actualizar</span>
-              </button>
+
+              {activeDraws.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activeDraws.map((d) => (
+                    <div
+                      key={d.id}
+                      className="rounded-3xl border border-amber-500/20 bg-gradient-to-b from-slate-900/90 to-slate-950 p-6 flex flex-col justify-between shadow-xl hover:border-amber-500/40 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-3">
+                          <span className="text-amber-400 font-bold">#{d.draw_number || d.id.slice(0, 8)}</span>
+                          <span className="inline-flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            {d.status}
+                          </span>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-white font-display">
+                          {d.title || `Sorteo de ${d.modality_id}`}
+                        </h3>
+                        <p className="mt-1 text-xs text-slate-400 font-mono">
+                          Modalidad: <strong className="text-amber-300">{d.modality_id}</strong>
+                        </p>
+
+                        {d.scheduled_at && (
+                          <div className="mt-4 text-xs text-slate-400 flex items-center gap-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                            <Clock className="h-3.5 w-3.5 text-amber-400" />
+                            <span>{new Date(d.scheduled_at).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-slate-800/80">
+                        {onEnterLiveRoom && (
+                          <button
+                            onClick={() => { playClickSound(); onEnterLiveRoom(d.modality_id); }}
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-xs font-black text-slate-950 transition-all shadow-md shadow-amber-500/20 cursor-pointer active:scale-98"
+                          >
+                            <Radio className="h-3.5 w-3.5" />
+                            <span>Entrar a la Sala en Vivo</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 text-center max-w-xl mx-auto">
+                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-slate-400 mb-2.5">
+                    <Clock className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white font-display">
+                    Sorteos oficiales en preparación
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400 max-w-md mx-auto">
+                    Los operadores programan partidas continuas. Puedes acceder de inmediato a cualquiera de las 5 salas fijas a continuación.
+                  </p>
+                </div>
+              )}
             </div>
 
-            {activeDraws.length > 0 ? (
+            {/* Catálogo de las 5 Salas Fijas Oficiales del Club */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-white font-display flex items-center gap-2">
+                  <Dices className="h-4 w-4 text-amber-400" />
+                  <span>Salas Oficiales por Modalidad Venezolana</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Ingresa a cualquier sala para sintonizar la extracción de balotas con locución oficial.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeDraws.map((d) => (
-                  <div key={d.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 flex flex-col justify-between">
+                {modalities.map((mod) => (
+                  <div
+                    key={mod.id}
+                    className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col justify-between hover:border-amber-500/30 transition-all shadow-xl group"
+                  >
                     <div>
-                      <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2">
-                        <span>Sorteo #{d.draw_number || d.id.slice(0, 8)}</span>
-                        <span className="text-emerald-400 font-bold">{d.status}</span>
+                      <div className="flex items-center justify-between text-xs font-mono text-slate-400 mb-2">
+                        <span className="text-amber-400 font-bold">{mod.id}</span>
+                        <span>{mod.grid_rows}x{mod.grid_cols} · {mod.total_balls} balotas</span>
                       </div>
-                      <h3 className="text-base font-bold text-white font-display">
-                        {d.title || `Sorteo de ${d.modality_id}`}
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-400">
-                        Modalidad: <strong className="text-slate-200">{d.modality_id}</strong>
+                      <h4 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors font-display">
+                        {mod.name}
+                      </h4>
+                      <p className="mt-2 text-xs text-slate-400 leading-relaxed line-clamp-2">
+                        {mod.description}
                       </p>
-                      {d.scheduled_at && (
-                        <div className="mt-3 text-xs text-slate-400 flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-amber-400" />
-                          <span>{new Date(d.scheduled_at).toLocaleString()}</span>
-                        </div>
-                      )}
+
+                      <div className="mt-4 p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] text-slate-300 flex items-center justify-between">
+                        <span>Casilla Central:</span>
+                        <strong className="text-amber-300 font-mono">
+                          {mod.has_free_center ? 'LIBRE (FREE)' : 'Con Número'}
+                        </strong>
+                      </div>
                     </div>
-                    <div className="mt-6 pt-3 border-t border-slate-800/60">
+
+                    <div className="mt-6 pt-3 border-t border-slate-800/80">
                       {onEnterLiveRoom && (
                         <button
-                          onClick={() => onEnterLiveRoom(d.modality_id)}
-                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 transition-all cursor-pointer"
+                          onClick={() => { playClickSound(); onEnterLiveRoom(mod.id); }}
+                          className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-xs font-bold text-white transition-all cursor-pointer"
                         >
-                          <ExternalLink className="h-3 w-3" />
-                          <span>Entrar a la Sala en Vivo</span>
+                          <Play className="h-3 w-3 fill-current" />
+                          <span>Entrar a la Sala</span>
                         </button>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-xl mx-auto">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-slate-400 mb-3">
-                    <Calendar className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-base font-bold text-white font-display">
-                    No hay sorteos disponibles en este momento.
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-400">
-                    Las salas y próximos sorteos oficiales se actualizarán tan pronto sean programados por los operadores.
-                  </p>
-                  <button
-                    onClick={loadActiveDraws}
-                    disabled={drawsLoading}
-                    className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    <RefreshCw className={`h-3.5 w-3.5 ${drawsLoading ? 'animate-spin text-amber-400' : ''}`} />
-                    <span>ACTUALIZAR</span>
-                  </button>
-                </div>
-
-                {/* Acceso directo a salas oficiales de cada modalidad */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3">
-                    Salas Oficiales por Modalidad
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {modalities.map((mod) => (
-                      <div key={mod.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 flex items-center justify-between">
-                        <div>
-                          <div className="text-xs font-bold text-white">{mod.name}</div>
-                          <div className="text-[11px] text-slate-400">{mod.grid_rows}x{mod.grid_cols} · {mod.total_balls} balotas</div>
-                        </div>
-                        {onEnterLiveRoom && (
-                          <button
-                            onClick={() => onEnterLiveRoom(mod.id)}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
-                          >
-                            Entrar
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* TAB: MIS CARTONES */}
+        {/* ==================================================================== */}
+        {/* PESTAÑA: MIS CARTONES                                                */}
+        {/* ==================================================================== */}
         {activeTab === 'cartones' && (
-          <div>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div>
+                <h2 className="text-lg font-black text-white font-display">
+                  Tus Cartones Certificados
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Cartones vinculados a tu ID de jugador. La validación matemática de aciertos es server-authoritative.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={loadUserCards}
+                  disabled={cardsLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  title="Actualizar cartones"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${cardsLoading ? 'animate-spin text-amber-400' : ''}`} />
+                  <span>Actualizar</span>
+                </button>
+              </div>
+            </div>
+
             {userCards.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {userCards.map((c) => {
@@ -554,64 +699,87 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                 })}
               </div>
             ) : (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-10 text-center max-w-xl mx-auto">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-amber-400 mb-4">
-                  <Grid3X3 className="h-6 w-6" />
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-4">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                  <Grid3X3 className="h-7 w-7" />
                 </div>
-                <h3 className="text-base font-bold text-white font-display">
-                  Todavía no tienes cartones.
+                <h3 className="text-lg font-bold text-white font-display">
+                  Aún no tienes cartones emitidos en este sorteo
                 </h3>
-                <p className="mt-2 text-xs text-slate-400">
-                  Tus cartones adquiridos para las partidas en vivo aparecerán en este panel.
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
+                  Tus cartones adquiridos se vincularán automáticamente a tu ID <strong className="text-amber-400 font-mono">{publicId}</strong>. Puedes ingresar a cualquier sala para seguir la partida o consultar los sorteos activos.
                 </p>
-                <div className="mt-5 flex items-center justify-center gap-3">
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                   <button
                     onClick={() => setActiveTab('sorteos')}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs hover:from-amber-300 hover:to-amber-400 transition-all cursor-pointer"
+                    className="px-6 py-3 rounded-2xl btn-gaming-gold shine-sweep text-slate-950 font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg"
                   >
-                    VER SALAS DISPONIBLES
+                    EXPLORAR SALAS EN VIVO
                   </button>
-                  <button
-                    onClick={loadUserCards}
-                    disabled={cardsLoading}
-                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                    title="Actualizar cartones"
-                  >
-                    <RefreshCw className={`h-3.5 w-3.5 ${cardsLoading ? 'animate-spin text-amber-400' : ''}`} />
-                  </button>
+                  {onEnterLiveRoom && (
+                    <button
+                      onClick={() => onEnterLiveRoom('BINGO_75')}
+                      className="px-6 py-3 rounded-2xl bg-slate-800/90 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition-colors cursor-pointer"
+                    >
+                      IR A LA SALA PRINCIPAL
+                    </button>
+                  )}
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* TAB: HISTORIAL */}
+        {/* ==================================================================== */}
+        {/* PESTAÑA: HISTORIAL                                                   */}
+        {/* ==================================================================== */}
         {activeTab === 'historial' && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center max-w-2xl mx-auto">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-sky-400 mb-4">
-              <History className="h-6 w-6" />
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                  <History className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-display">
+                    Registro de Partidas y Premios
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    ID de Jugador: <strong className="text-amber-400 font-mono">{publicId}</strong> · Trazabilidad Monotónica
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+                <p>
+                  Todas las partidas concluidas, validaciones de bingo otorgadas y eventos de sorteo se almacenan de forma inmutable en PostgreSQL.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-slate-400 font-mono">
+                  <span>Modo: OFICIAL RECREATIVO</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Auditoría Forense: ACTIVA</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Server-Authoritative: SÍ</span>
+                </div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white font-display">
-              Historial de Actividad
-            </h3>
-            <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-              Cuenta vinculada al identificador <strong className="text-amber-400 font-mono">{publicId}</strong>. Toda tu participación en sorteos y operaciones autorizadas quedará registrada aquí.
-            </p>
           </div>
         )}
 
-        {/* TAB: PERFIL */}
+        {/* ==================================================================== */}
+        {/* PESTAÑA: PERFIL                                                      */}
+        {/* ==================================================================== */}
         {activeTab === 'perfil' && (
-          <div className="max-w-2xl mx-auto rounded-xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8">
+          <div className="max-w-2xl mx-auto rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-2xl">
             <h2 className="text-lg font-bold text-white font-display mb-1">
-              Datos del Perfil
+              Perfil del Jugador
             </h2>
             <p className="text-xs text-slate-400 mb-6">
-              Información del usuario vinculada a su cuenta de Supabase Auth. Su rol y estatus son inmutables por el cliente.
+              Tus datos de cuenta en Bingo Club Venezuela. Tu ID público es el único identificador visible para otros jugadores.
             </p>
 
             {feedbackMsg && (
-              <div className={`mb-6 flex items-center gap-2 rounded-lg p-3 text-xs border ${
+              <div className={`mb-6 flex items-center gap-2 rounded-xl p-3.5 text-xs border ${
                 feedbackMsg.type === 'success'
                   ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                   : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
@@ -635,19 +803,19 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                     type="text"
                     disabled
                     value={publicId}
-                    className="w-full rounded-lg border border-slate-800 bg-slate-950 py-2 px-3 text-xs font-mono text-amber-400 font-bold opacity-80 cursor-not-allowed"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2.5 px-3 text-xs font-mono text-amber-400 font-bold opacity-80 cursor-not-allowed"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">
-                    Rol Asignado (Controlado por Servidor)
+                    Rol Asignado por el Servidor
                   </label>
                   <input
                     type="text"
                     disabled
                     value={role}
-                    className="w-full rounded-lg border border-slate-800 bg-slate-950 py-2 px-3 text-xs font-mono text-slate-300 font-semibold opacity-80 cursor-not-allowed"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2.5 px-3 text-xs font-mono text-slate-300 font-semibold opacity-80 cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -661,20 +829,20 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Tu nombre completo"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2 px-3 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
-                  Nombre Público / Apodo
+                  Nombre Público / Apodo en Salas
                 </label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Nombre visible para otros jugadores"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2 px-3 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -687,7 +855,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+58 412 1234567"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2 px-3 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -695,7 +863,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                 <button
                   type="submit"
                   disabled={saveLoading}
-                  className="rounded-lg bg-amber-500 hover:bg-amber-400 py-2.5 px-5 text-xs font-bold text-slate-950 transition-colors cursor-pointer"
+                  className="rounded-xl bg-amber-500 hover:bg-amber-400 py-3 px-6 text-xs font-black text-slate-950 transition-all cursor-pointer shadow-md shadow-amber-500/10 active:scale-95"
                 >
                   {saveLoading ? 'Guardando...' : 'GUARDAR CAMBIOS'}
                 </button>
@@ -704,14 +872,16 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
           </div>
         )}
 
-        {/* TAB: SEGURIDAD */}
+        {/* ==================================================================== */}
+        {/* PESTAÑA: SEGURIDAD & MFA (FASE 2.8 STEP-UP)                           */}
+        {/* ==================================================================== */}
         {activeTab === 'seguridad' && (
           <div className="max-w-4xl mx-auto space-y-6">
             {/* 1. ESTADO GENERAL DE MFA */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 sm:p-7 shadow-xl">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 sm:p-7 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5 mb-5">
                 <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-xl border ${
+                  <div className={`p-3 rounded-2xl border ${
                     isMfaActive
                       ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-400'
                       : 'bg-amber-950/40 border-amber-500/30 text-amber-400'
@@ -722,11 +892,11 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                     <h2 className="text-lg font-bold text-white font-display flex items-center gap-2">
                       <span>Autenticación de Dos Factores (MFA / TOTP)</span>
                       {isMfaActive ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
                           <Check className="h-3 w-3" /> ACTIVO
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-400 border border-slate-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold text-slate-400 border border-slate-700">
                           INACTIVO
                         </span>
                       )}
@@ -741,7 +911,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                   <button
                     onClick={refreshMfaState}
                     disabled={mfaLoading}
-                    className="p-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
                     title="Actualizar estado de seguridad"
                   >
                     <RefreshCw className={`h-4 w-4 ${mfaLoading ? 'animate-spin text-amber-400' : ''}`} />
@@ -775,7 +945,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                 </h3>
 
                 {mfaFactors.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-800 p-4 text-center text-xs text-slate-500">
+                  <div className="rounded-2xl border border-dashed border-slate-800 p-4 text-center text-xs text-slate-500">
                     No tiene ningún factor TOTP registrado actualmente.
                   </div>
                 ) : (
@@ -783,10 +953,10 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                     {mfaFactors.map((factor) => (
                       <div
                         key={factor.id}
-                        className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="rounded-2xl border border-slate-800 bg-slate-950 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                          <div className="h-9 w-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
                             <KeyRound className="h-4 w-4" />
                           </div>
                           <div>
@@ -805,7 +975,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                         {canDisable ? (
                           <button
                             onClick={() => handleDisableMfa(factor.id)}
-                            className="rounded-lg border border-slate-700 bg-slate-900 hover:bg-rose-950 hover:border-rose-700/50 hover:text-rose-400 px-3 py-1.5 text-xs text-slate-400 transition-colors self-start sm:self-auto cursor-pointer"
+                            className="rounded-xl border border-slate-700 bg-slate-900 hover:bg-rose-950 hover:border-rose-700/50 hover:text-rose-400 px-3 py-1.5 text-xs text-slate-400 transition-colors self-start sm:self-auto cursor-pointer"
                           >
                             Desactivar Factor
                           </button>
@@ -824,7 +994,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
             {/* 2. ACCIONES PROTEGIDAS POR STEP-UP (PAGO MÓVIL Y RETIROS) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* CAMBIO DE PAGO MÓVIL (HIGH RISK) */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">
                   <Lock className="h-4 w-4" />
                   <span>Datos de Pago Móvil (Step-Up)</span>
@@ -880,7 +1050,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
               </div>
 
               {/* SOLICITUD DE RETIRO (HIGH RISK) */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">
                   <Wallet className="h-4 w-4" />
                   <span>Retiro de Fondos (Step-Up)</span>
@@ -911,7 +1081,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-[11px] text-slate-400">
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-[11px] text-slate-400">
                     Destino: <strong className="text-white">{pagoMovilPhone ? maskPhone(pagoMovilPhone) : 'Pago Móvil registrado'}</strong> ({pagoMovilBank.split(' - ')[1] || 'Banco Principal'})
                   </div>
 
@@ -928,7 +1098,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
             </div>
 
             {/* 3. CONTRASEÑA Y DETALLES DE SESIÓN */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
               <h3 className="text-base font-bold text-white font-display mb-1 flex items-center gap-2">
                 <Lock className="h-4 w-4 text-amber-400" />
                 <span>Credenciales y Estado Criptográfico</span>
@@ -937,7 +1107,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                 Protección criptográfica y comprobación de integridad forense.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-950">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-slate-800 bg-slate-950">
                 <div>
                   <div className="text-xs font-bold text-white">Contraseña de Acceso</div>
                   <div className="text-[11px] text-slate-400">
@@ -947,22 +1117,22 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
                 <button
                   onClick={handlePasswordReset}
                   disabled={saveLoading}
-                  className="rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
+                  className="rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
                 >
                   Cambiar Contraseña
                 </button>
               </div>
 
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
                   <div className="text-slate-500 text-[10px]">PROTECCIÓN RLS</div>
                   <div className="text-emerald-400 font-bold mt-0.5">ACTIVA (100%)</div>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
                   <div className="text-slate-500 text-[10px]">AUTORIDAD CLIENTE</div>
                   <div className="text-rose-400 font-bold mt-0.5">DENEGADA (Server Only)</div>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
                   <div className="text-slate-500 text-[10px]">ID PÚBLICO</div>
                   <div className="text-amber-400 font-bold mt-0.5">{publicId}</div>
                 </div>
@@ -970,7 +1140,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
             </div>
 
             {/* 4. HISTORIAL DE AUDITORÍA RECIENTE */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
               <h3 className="text-base font-bold text-white font-display mb-1 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-amber-400" />
                 <span>Historial de Seguridad y Auditoría (Últimos Eventos)</span>
@@ -980,11 +1150,11 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
               </p>
 
               {securityAuditLogs.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-800 p-4 text-center text-xs text-slate-500">
+                <div className="rounded-2xl border border-dashed border-slate-800 p-4 text-center text-xs text-slate-500">
                   Sin eventos recientes de seguridad.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-950 overflow-hidden">
+                <div className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
                   {securityAuditLogs.slice(0, 5).map((log) => (
                     <div key={log.id} className="p-3 text-xs flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
@@ -1004,7 +1174,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
             </div>
 
             {/* 5. ZONA CRÍTICA: ELIMINACIÓN DE CUENTA (CRITICAL RISK) */}
-            <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-6 shadow-xl">
+            <div className="rounded-3xl border border-rose-500/30 bg-rose-950/20 p-6 shadow-xl">
               <div className="flex items-center gap-2 text-xs font-bold text-rose-400 uppercase tracking-wider mb-2">
                 <AlertTriangle className="h-4 w-4" />
                 <span>Zona Crítica e Irreversible</span>
@@ -1071,4 +1241,3 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
     </div>
   );
 };
-

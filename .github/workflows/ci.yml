@@ -1,0 +1,74 @@
+name: CI Pipeline - Bingo Club VNZLA Online
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-build:
+    name: Lint, Typecheck, Test and Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pre-build Security Scan - Guard against repository secrets
+        run: |
+          if [ -f ".env" ]; then
+            echo "ERROR: .env file found in repository! Never commit private secrets."
+            exit 1
+          fi
+          # Rechazar de forma terminante cualquier clave service_role o secreta
+          if git grep -i -E "SUPABASE_SERVICE_ROLE_KEY|service_role_key\s*[:=]|sk_live_" -- ':!.github' ':!docs' ':!scripts/verify-baseline-drift.mjs'; then
+            echo "ERROR: Se detectó un secreto privado en el repositorio."
+            exit 1
+          fi
+
+      - name: Run TypeScript Typecheck & Linter
+        run: |
+          npm run lint
+          npm run typecheck
+
+      - name: Run Automated Test Suite (Unit & Integration)
+        run: npm run test
+
+      - name: Run Security Baseline Regression Guard
+        run: npm run test:security
+
+      - name: Run Automated Baseline Drift Detection
+        run: npm run verify:drift
+
+      - name: Build Production Assets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://lfmavupbxfkxuzncfzzs.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_M84R1OrB_UAz9qVvbVNciQ_YYwyG-iG' }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAFOjgftMybjD3w5c' }}
+        run: npm run build
+
+      - name: Post-Build Security Scan - Verify Dist Artifacts
+        run: |
+          echo "Escaneando artefactos de producción compilados..."
+          if grep -rn -E "service_role|TURNSTILE_SECRET_KEY|sk_live_" dist/ 2>/dev/null; then
+            echo "ERROR: Se detectaron secretos privados filtrados en los bundles de producción de dist/!"
+            exit 1
+          fi
+          echo "Dist artifacts libres de secretos privados."
+
+      - name: Post-Deploy & Smoke Security Verification
+        run: npm run verify:post-deploy

@@ -135,8 +135,8 @@ export const LivePlayerBoard: React.FC<LivePlayerBoardProps> = ({
                           key={tokenIdx}
                           className={`h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-full transition-all duration-300 ${
                             isActive
-                              ? 'bg-amber-400 shadow-sm shadow-amber-400/50 scale-105'
-                              : 'bg-slate-800 border border-slate-700'
+                              ? 'dauber-marked-gold scale-110 shadow-sm border border-amber-200'
+                              : 'bg-slate-800 border border-slate-700/80'
                           }`}
                           title={`Ficha ${tokenIdx}`}
                         />

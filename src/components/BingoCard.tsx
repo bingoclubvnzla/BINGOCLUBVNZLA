@@ -79,61 +79,91 @@ export const BingoCard: React.FC<BingoCardProps> = ({
   const isPlaying = card.status === 'PLAYING' || card.status === 'ISSUED';
   const canClaim = isPlaying && isDrawActive && Boolean(onClaimBingo) && !disabled;
 
+  // Contador de aciertos marcados en este cartón
+  const markedCount = useMemo(() => {
+    let count = 0;
+    grid.forEach((row) => {
+      row.forEach((cell) => {
+        const num = typeof cell === 'number' ? cell : cell ? Number(cell) : 0;
+        if (num > 0 && drawnSet.has(num)) {
+          count++;
+        }
+      });
+    });
+    return count;
+  }, [grid, drawnSet]);
+
+  const B75_HEADER_CLASSES = [
+    'b75-header-b',
+    'b75-header-i',
+    'b75-header-n',
+    'b75-header-g',
+    'b75-header-o',
+  ];
+
   return (
     <div
-      className={`rounded-2xl border transition-all relative overflow-hidden flex flex-col ${
+      className={`rounded-3xl border-2 transition-all duration-300 relative overflow-hidden flex flex-col shadow-2xl ${
         isWon
-          ? 'border-amber-400/80 bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 shadow-xl shadow-amber-500/10'
-          : 'border-slate-800 bg-slate-900/80 hover:border-slate-700'
+          ? 'bingo-card-frame-won border-amber-400'
+          : 'bingo-card-frame hover:border-amber-400/60'
       } ${className}`}
     >
+      {/* Sutil acento superior de tarjeta con brillo tricolor venezolano */}
+      <div className={`h-1.5 w-full ${isWon ? 'bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 animate-pulse' : 'criollo-accent-bar'}`} />
+
       {/* CABECERA DEL CARTÓN */}
-      <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+      <div className="px-3.5 sm:px-4 py-2.5 border-b border-slate-700/60 flex items-center justify-between bg-slate-950/80 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono font-bold text-amber-400">
+          <span className="text-xs font-mono font-black text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-lg border border-amber-500/30 shadow-xs">
             #{card.card_serial || card.id.slice(0, 8)}
           </span>
           <span className="text-slate-600">·</span>
-          <span className="text-[10px] font-mono text-slate-400 uppercase">
+          <span className="text-[11px] font-mono font-extrabold text-sky-300 uppercase tracking-wider">
             {cleanModality}
           </span>
         </div>
 
-        {/* Estatus oficial del cartón */}
-        <div className="flex items-center gap-1.5">
+        {/* Estatus oficial y aciertos */}
+        <div className="flex items-center gap-2">
+          {markedCount > 0 && (
+            <span className="text-[10px] font-mono font-black text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+              {markedCount} {markedCount === 1 ? 'acierto' : 'aciertos'}
+            </span>
+          )}
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider uppercase border ${
+            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border shadow-sm ${
               isWon
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                ? 'bg-amber-500/30 text-amber-200 border-amber-400 animate-pulse'
                 : card.status === 'PLAYING'
-                ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30'
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
                 : card.status === 'CANCELLED'
-                ? 'bg-rose-950/40 text-rose-400 border-rose-500/30'
+                ? 'bg-rose-950/60 text-rose-300 border-rose-500/40'
                 : 'bg-slate-800 text-slate-300 border-slate-700'
             }`}
           >
             {card.status}
           </span>
-          {isWon && <Trophy className="h-3.5 w-3.5 text-amber-400" />}
+          {isWon && <Trophy className="h-4 w-4 text-amber-400 animate-bounce" />}
         </div>
       </div>
 
-      {/* LETRAS B-I-N-G-O PARA BINGO_75 */}
+      {/* LETRAS B-I-N-G-O PARA BINGO_75 CON ESTILO FÍSICO DE CASINO */}
       {cleanModality === 'BINGO_75' && grid.length === 5 && (
-        <div className="grid grid-cols-5 bg-gradient-to-r from-amber-500/15 via-amber-400/15 to-amber-500/15 border-b border-amber-500/20 text-center py-1.5">
-          {BINGO_75_LETTERS.map((letter) => (
-            <span
+        <div className="grid grid-cols-5 border-b border-slate-700/60 text-center shadow-md">
+          {BINGO_75_LETTERS.map((letter, idx) => (
+            <div
               key={letter}
-              className="text-xs font-black text-amber-400 font-display tracking-wider"
+              className={`py-2 text-sm sm:text-base font-black font-display tracking-widest ${B75_HEADER_CLASSES[idx]}`}
             >
               {letter}
-            </span>
+            </div>
           ))}
         </div>
       )}
 
       {/* MATRIZ DEL CARTÓN */}
-      <div className="p-3 flex-1 flex flex-col justify-center">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-center bg-slate-950/40">
         {cleanModality === 'BINGO_90' || cleanModality === 'CHAPITAS' ? (
           // FORMATO 3x9
           <div className="grid grid-cols-9 gap-1 sm:gap-1.5">
@@ -148,7 +178,7 @@ export const BingoCard: React.FC<BingoCardProps> = ({
                   return (
                     <div
                       key={`empty-${rIdx}-${cIdx}`}
-                      className="h-10 sm:h-12 rounded-lg bg-slate-950/50 border border-slate-900 flex items-center justify-center opacity-40"
+                      className="h-10 sm:h-12 rounded-xl bg-slate-950/60 border border-slate-800/40 flex items-center justify-center opacity-25"
                     />
                   );
                 }
@@ -157,20 +187,20 @@ export const BingoCard: React.FC<BingoCardProps> = ({
                   return (
                     <div
                       key={`chapita-${rIdx}-${cIdx}`}
-                      className={`h-10 sm:h-12 rounded-full border transition-all flex flex-col items-center justify-center p-0.5 relative text-center ${
+                      className={`h-10 sm:h-12 rounded-full border-2 transition-all flex flex-col items-center justify-center p-0.5 relative text-center chapita-disk cursor-default ${
                         isMarked
-                          ? 'bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-200 text-slate-950 border-amber-300 font-bold shadow-md shadow-amber-500/20 scale-102 z-10'
-                          : 'bg-slate-900 border-slate-800 text-slate-200'
+                          ? 'dauber-marked-gold text-slate-950 border-amber-200 font-black scale-105 z-10 shadow-lg'
+                          : 'bg-slate-900 border-slate-700 text-slate-200 hover:border-amber-400/50 hover:bg-slate-800'
                       }`}
                       title={item ? `${cellNum}: ${item.name}` : `Balota ${cellNum}`}
                     >
-                      <span className="text-[11px] sm:text-xs font-black font-mono leading-none">
+                      <span className="text-[11px] sm:text-xs font-black font-mono leading-none drop-shadow-xs">
                         {cellNum}
                       </span>
                       {item && (
                         <span
-                          className={`text-[8px] sm:text-[9px] truncate max-w-full leading-tight font-medium ${
-                            isMarked ? 'text-slate-950 font-bold' : 'text-slate-400'
+                          className={`text-[8px] sm:text-[9px] truncate max-w-full leading-tight font-semibold ${
+                            isMarked ? 'text-slate-950 font-black' : 'text-slate-400'
                           }`}
                         >
                           {item.name}
@@ -183,10 +213,10 @@ export const BingoCard: React.FC<BingoCardProps> = ({
                 return (
                   <div
                     key={`b90-${rIdx}-${cIdx}`}
-                    className={`h-10 sm:h-12 rounded-lg border transition-all flex items-center justify-center font-mono font-bold text-xs sm:text-sm ${
+                    className={`h-10 sm:h-12 rounded-xl border-2 transition-all flex items-center justify-center font-mono font-bold text-xs sm:text-sm cursor-default ${
                       isMarked
-                        ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm scale-102 z-10'
-                        : 'bg-slate-950 border-slate-800 text-slate-200'
+                        ? 'dauber-chip-ruby text-white border-rose-200 font-black scale-105 z-10 shadow-lg drop-shadow-md'
+                        : 'bg-slate-900/90 border-slate-700/60 text-slate-200 hover:border-slate-500 hover:bg-slate-800'
                     }`}
                   >
                     {cellNum}
@@ -213,11 +243,11 @@ export const BingoCard: React.FC<BingoCardProps> = ({
                   return (
                     <div
                       key={`center-${rIdx}-${cIdx}`}
-                      className="h-12 sm:h-14 rounded-xl border border-amber-500/40 bg-amber-500/20 text-amber-300 flex flex-col items-center justify-center font-bold font-display text-[10px] sm:text-xs"
+                      className="h-12 sm:h-14 rounded-2xl bingo-cell-free text-amber-300 flex flex-col items-center justify-center font-black font-display text-[10px] sm:text-xs relative overflow-hidden group cursor-default"
                       title="Casilla Central Libre"
                     >
-                      <Sparkles className="h-3 w-3 text-amber-400 mb-0.5" />
-                      <span>LIBRE</span>
+                      <Sparkles className="h-4 w-4 text-amber-300 mb-0.5 animate-spin-slow group-hover:scale-125 transition-transform" />
+                      <span className="gold-text-gradient font-black tracking-wider drop-shadow-xs">LIBRE</span>
                     </div>
                   );
                 }
@@ -232,20 +262,20 @@ export const BingoCard: React.FC<BingoCardProps> = ({
                 return (
                   <div
                     key={`cell-${rIdx}-${cIdx}`}
-                    className={`h-12 sm:h-14 rounded-xl border transition-all flex flex-col items-center justify-center p-1 relative text-center ${
+                    className={`h-12 sm:h-14 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center p-1 relative text-center cursor-default ${
                       isMarked
-                        ? 'bg-gradient-to-tr from-amber-400 via-amber-300 to-amber-200 text-slate-950 border-amber-200 font-bold shadow-md shadow-amber-500/20 scale-102 z-10'
-                        : 'bg-slate-950 border-slate-800 text-slate-200'
+                        ? 'dauber-marked-gold text-slate-950 border-amber-200 font-black scale-105 z-10 shadow-xl'
+                        : 'bingo-grid-cell text-white'
                     }`}
                     title={item ? `#${cellNum} ${item.name}` : `Balota ${cellNum}`}
                   >
-                    <span className="text-xs sm:text-sm font-black font-mono leading-none">
+                    <span className={`text-sm sm:text-base font-extrabold font-mono leading-none ${isMarked ? 'text-slate-950 drop-shadow-xs' : 'text-slate-100'}`}>
                       {cellNum}
                     </span>
                     {item && (
                       <span
-                        className={`text-[9px] sm:text-[10px] truncate max-w-full leading-tight font-medium mt-0.5 ${
-                          isMarked ? 'text-slate-950 font-bold' : 'text-slate-400'
+                        className={`text-[9px] sm:text-[10px] truncate max-w-full leading-tight font-bold mt-0.5 ${
+                          isMarked ? 'text-slate-950' : 'text-amber-300/80'
                         }`}
                       >
                         {item.name}
@@ -261,37 +291,37 @@ export const BingoCard: React.FC<BingoCardProps> = ({
 
       {/* BOTÓN Y FEEDBACK DE "CANTAR BINGO" */}
       {canClaim && (
-        <div className="p-3 border-t border-slate-800/80 bg-slate-950/60">
+        <div className="p-3 sm:p-3.5 border-t border-slate-700/60 bg-slate-950/90 backdrop-blur-md">
           <button
             onClick={handleClaim}
             disabled={claimLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 active:scale-98 disabled:opacity-50 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl btn-gaming-gold shine-sweep text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50"
           >
             {claimLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
                 <span>Verificando con Servidor...</span>
               </>
             ) : (
               <>
-                <Trophy className="h-4 w-4 text-slate-950" />
-                <span>¡Cantar Bingo!</span>
+                <Trophy className="h-4 w-4 text-slate-950 animate-bounce" />
+                <span>¡Cantar Bingo en Vivo!</span>
               </>
             )}
           </button>
 
           {claimFeedback && (
             <div
-              className={`mt-2 flex items-center gap-2 p-2 rounded-lg text-xs font-mono border ${
+              className={`mt-2.5 flex items-center gap-2 p-2.5 rounded-xl text-xs font-mono border ${
                 claimFeedback.success
-                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                  : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+                  ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                  : 'bg-rose-950/60 border-rose-500/50 text-rose-300'
               }`}
             >
               {claimFeedback.success ? (
-                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                <Check className="h-4 w-4 shrink-0 text-emerald-400" />
               ) : (
-                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-rose-400" />
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
               )}
               <span className="truncate">{claimFeedback.text}</span>
             </div>
