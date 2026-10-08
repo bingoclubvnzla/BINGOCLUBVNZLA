@@ -12,6 +12,7 @@ export const DRAW_REALTIME_EVENTS = {
   DRAW_RESUMED: 'DRAW_RESUMED',
   DRAW_FINISHED: 'DRAW_FINISHED',
   DRAW_CANCELLED: 'DRAW_CANCELLED',
+  WINNER_AWARDED: 'WINNER_AWARDED',
   SNAPSHOT_AVAILABLE: 'SNAPSHOT_AVAILABLE',
   HEARTBEAT_PING: 'HEARTBEAT_PING',
   HEARTBEAT_PONG: 'HEARTBEAT_PONG',
@@ -68,4 +69,16 @@ export interface DrawEventPayload {
   created_at: string;
   created_by: string; // Server authority ID
   version: number;
+}
+
+export interface WinnerAwardedPayload {
+  winner_id: string;
+  draw_id: string;
+  card_id: string;
+  user_id?: string;
+  pattern: string;
+  prize_amount: number;
+  event_hash?: string;
+  sequence_number?: number;
+  timestamp?: string;
 }

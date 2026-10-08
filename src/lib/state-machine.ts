@@ -4,8 +4,51 @@
  * BINGO CLUB VNZLA ONLINE - Draw State Machine (Server-Authoritative Mirror)
  */
 
-import { DrawStatus } from '../types/database.types';
+import { DrawStatus, UserRole } from '../types/database.types';
 import { DRAW_STATE_MACHINE, isValidDrawTransition } from '../types/game.types';
+
+export { isValidDrawTransition };
+export const VALID_DRAW_TRANSITIONS = DRAW_STATE_MACHINE;
+
+export function hasRoleLevel(userRole: UserRole, requiredRole: UserRole): boolean {
+  const levels: Record<UserRole, number> = {
+    PLAYER: 1,
+    OPERATOR: 2,
+    SUPERVISOR: 3,
+    ADMIN: 4,
+    SUPER_ADMIN: 5,
+  };
+  return (levels[userRole] || 0) >= (levels[requiredRole] || 0);
+}
+
+export function canAccessOperatorPanel(role: UserRole): boolean {
+  return ['OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canAccessAdminPanel(role: UserRole): boolean {
+  return ['ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canManageDraws(role: UserRole): boolean {
+  return ['OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canViewAuditLogs(role: UserRole): boolean {
+  return ['SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canModifyModalities(role: UserRole): boolean {
+  return ['ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function isValidPublicId(publicId: string): boolean {
+  return /^BCV-[A-Z0-9]{6,}$/.test(publicId);
+}
+
+export function generateIdempotencyKey(prefix = 'TX'): string {
+  const rand = Math.random().toString(36).substring(2, 10).toUpperCase();
+  return `${prefix}-${Date.now()}-${rand}`;
+}
 
 export interface StateTransitionResult {
   success: boolean;

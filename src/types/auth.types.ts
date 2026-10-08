@@ -1,4 +1,8 @@
-import type { Profile, UserRole } from './database.types';
+import type { Profile, UserRole, UserStatus, AuditLog } from './database.types';
+
+export type { UserRole, UserStatus };
+export type UserProfile = Profile;
+export type AuditLogEntry = AuditLog;
 
 export interface AuthState {
   user: {
@@ -40,7 +44,11 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 };
 
 export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): boolean {
-  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+  return (ROLE_HIERARCHY[userRole] || 0) >= (ROLE_HIERARCHY[requiredRole] || 0);
+}
+
+export function hasRoleLevel(userRole: UserRole, requiredRole: UserRole): boolean {
+  return hasMinimumRole(userRole, requiredRole);
 }
 
 export function canManageUsers(role: UserRole): boolean {
@@ -58,4 +66,13 @@ export function canSuperviseOperations(role: UserRole): boolean {
 export function canAuditSystem(role: UserRole): boolean {
   return ['SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
 }
+
+export function canAccessOperatorPanel(role: UserRole): boolean {
+  return ['OPERATOR', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
+export function canAccessAdminPanel(role: UserRole): boolean {
+  return ['ADMIN', 'SUPER_ADMIN'].includes(role);
+}
+
 

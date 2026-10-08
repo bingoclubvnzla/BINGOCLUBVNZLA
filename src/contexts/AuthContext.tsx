@@ -45,7 +45,7 @@ export interface AuthContextType {
   resetPassword: (
     email: string,
     captchaToken?: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; message?: string }>;
   updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   resendVerificationEmail: (
     email: string,
@@ -64,11 +64,20 @@ export interface AuthContextType {
   effectiveRole: UserRole;
   logout: () => Promise<void>;
   login: (emailOrPayload: string | { email: string; password: string }, maybePassword?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
-  register: (payload: { email: string; password: string; fullName?: string; displayName?: string; phone?: string }) => Promise<{ success: boolean; error?: string; message?: string }>;
-  updateProfile: (updates: { full_name?: string; display_name?: string; phone?: string; displayName?: string; fullName?: string }) => Promise<{ success: boolean; error?: string | null; message?: string }>;
+  register: (
+    emailOrPayload: string | { email: string; password: string; fullName?: string; displayName?: string; phone?: string },
+    maybePassword?: string,
+    maybeFullName?: string,
+    maybePhone?: string
+  ) => Promise<{ success: boolean; error?: string; message?: string }>;
+  updateProfile: (
+    updatesOrDisplayName: string | { full_name?: string; display_name?: string; phone?: string; displayName?: string; fullName?: string },
+    maybePhone?: string
+  ) => Promise<{ success: boolean; error?: string | null; message?: string }>;
   setActiveRolePreview: (role: UserRole | null) => void;
   error: string | null;
   clearError: () => void;
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -511,9 +520,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Mensaje uniforme anti-enumeración
-      return { success: true };
+      return { success: true, message: 'Si el correo está registrado, se enviaron las instrucciones.' };
     } catch {
       return { success: false, error: 'No se pudo enviar el correo de recuperación.' };
+
     }
   };
 
@@ -672,19 +682,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const res = await signIn(email, password);
           return { success: res.success, error: res.error, message: res.error };
         },
-        register: async (p) => {
-          const res = await signUp(p.email, p.password, p.fullName || p.displayName || 'Jugador');
+        register: async (emailOrPayload, maybePassword, maybeFullName, _maybePhone) => {
+          let email = '';
+          let password = '';
+          let fullName = 'Jugador';
+          if (typeof emailOrPayload === 'string') {
+            email = emailOrPayload;
+            password = maybePassword || '';
+            fullName = maybeFullName || 'Jugador';
+          } else {
+            email = emailOrPayload.email;
+            password = emailOrPayload.password;
+            fullName = emailOrPayload.fullName || emailOrPayload.displayName || 'Jugador';
+          }
+          const res = await signUp(email, password, fullName);
           return { success: res.success, error: res.error, message: res.error };
         },
-        updateProfile: async (updates) => {
-          const mappedUpdates = {
-            full_name: updates.full_name || updates.fullName,
-            display_name: updates.display_name || updates.displayName,
-            phone: updates.phone,
-          };
+        updateProfile: async (updatesOrDisplayName, maybePhone) => {
+          let mappedUpdates: { full_name?: string; display_name?: string; phone?: string } = {};
+          if (typeof updatesOrDisplayName === 'string') {
+            mappedUpdates = {
+              display_name: updatesOrDisplayName,
+              phone: maybePhone,
+            };
+          } else {
+            mappedUpdates = {
+              full_name: updatesOrDisplayName.full_name || updatesOrDisplayName.fullName,
+              display_name: updatesOrDisplayName.display_name || updatesOrDisplayName.displayName,
+              phone: updatesOrDisplayName.phone,
+            };
+          }
           const res = await updateProfileDetails(mappedUpdates);
           return { success: res.success, error: res.error, message: res.error || (res.success ? 'Perfil actualizado' : 'Error') };
         },
+
         setActiveRolePreview: setActiveTestRole,
         error: authError,
         clearError: () => setAuthError(null),

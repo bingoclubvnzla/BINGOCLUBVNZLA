@@ -305,8 +305,8 @@ export type AppEnvironment = 'LOCAL' | 'PREVIEW' | 'PRODUCTION';
 /**
  * Detecta el entorno de ejecución actual de forma determinista y segura.
  * - LOCAL: localhost, 127.0.0.1, *.localhost
- * - PREVIEW: subdominios de staging/preview en cloud run (*.run.app) o vercel (*.vercel.app)
- * - PRODUCTION: dominio oficial bingoclub.com.ve o cualquier entorno productivo
+ * - PREVIEW: subdominios de staging/preview en cloud run (*.run.app)
+ * - PRODUCTION: dominio oficial bingoclubvnzla.vercel.app o cualquier entorno productivo
  */
 export function getAppEnvironment(): AppEnvironment {
   if (typeof window !== 'undefined') {
@@ -317,6 +317,9 @@ export function getAppEnvironment(): AppEnvironment {
       hostname.endsWith('.localhost')
     ) {
       return 'LOCAL';
+    }
+    if (hostname === 'bingoclubvnzla.vercel.app') {
+      return 'PRODUCTION';
     }
     if (hostname.endsWith('.run.app') || hostname.endsWith('.vercel.app')) {
       return 'PREVIEW';

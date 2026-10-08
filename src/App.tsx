@@ -25,7 +25,9 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { DRAW_REALTIME_EVENTS } from './types/realtimeEvents';
 import { SupabaseDiagnosticModal } from './components/SupabaseDiagnosticModal';
 import { hasSufficientRole } from './lib/adminIdentities';
+import { recordUnauthorizedRouteAccess } from './lib/secureAccessRules';
 import type { UserRole } from './types/database';
+import { enforceCanonicalDomainClientSide } from './lib/canonicalConfig';
 
 function getViewPath(view: AppView): string {
   switch (view) {
@@ -57,6 +59,7 @@ function parseInitialRoute(): { view: AppView; authMode?: 'login' | 'register' }
   if (path === '/admin') return { view: 'admin' };
   if (path === '/super-admin') return { view: 'super-admin' };
   if (path === '/play' || path.startsWith('/play/')) return { view: 'play' };
+  if (path === '/auth/callback' || path.startsWith('/auth/callback')) return { view: 'player' };
   if (path === '/login') return { view: 'landing', authMode: 'login' };
   if (path === '/register') return { view: 'landing', authMode: 'register' };
 
@@ -121,12 +124,58 @@ function AppContent() {
     navigateTo(target.view, target.path);
   }, [role, navigateTo]);
 
-  // Si la ruta inicial era /player y el usuario acaba de autenticarse tras recargar (F5)
+  // Garantizar dominio canónico absoluto (redirección instantánea si entra por preview alias)
   useEffect(() => {
-    if (!isLoading && isAuthenticated && (activeView === 'landing' && window.location.pathname === '/player')) {
-      setActiveView('player');
+    enforceCanonicalDomainClientSide();
+  }, []);
+
+  // Si la ruta inicial era /player o retorno de /auth/callback o parámetros de sesión OAuth
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      const hasAuthHashOrCode = typeof window !== 'undefined' && (
+        window.location.hash.includes('access_token') ||
+        window.location.hash.includes('error') ||
+        window.location.search.includes('code=')
+      );
+
+      if (currentPath === '/player' || currentPath.startsWith('/auth/callback') || hasAuthHashOrCode) {
+        const target = getRoleTargetView(role);
+        setActiveView(target.view);
+        if (typeof window !== 'undefined' && (currentPath.startsWith('/auth/callback') || hasAuthHashOrCode)) {
+          window.history.replaceState({ view: target.view }, '', target.path);
+        }
+      }
     }
-  }, [isLoading, isAuthenticated, activeView]);
+  }, [isLoading, isAuthenticated, role]);
+
+  // REGLA 12: Auditoría de intentos de navegación no autorizada en rutas administrativas
+  useEffect(() => {
+    if (isLoading) return;
+    const isRestrictedView = ['super-admin', 'admin', 'supervisor', 'operator'].includes(activeView);
+    if (!isRestrictedView) return;
+
+    let unauthorized = false;
+    if (!isAuthenticated) {
+      unauthorized = true;
+    } else if (activeView === 'super-admin' && role !== 'SUPER_ADMIN') {
+      unauthorized = true;
+    } else if (activeView === 'admin' && !hasSufficientRole(role, 'ADMIN')) {
+      unauthorized = true;
+    } else if (activeView === 'supervisor' && !hasSufficientRole(role, 'SUPERVISOR')) {
+      unauthorized = true;
+    } else if (activeView === 'operator' && !hasSufficientRole(role, 'OPERATOR')) {
+      unauthorized = true;
+    }
+
+    if (unauthorized) {
+      recordUnauthorizedRouteAccess({
+        attemptedRoute: activeView,
+        userId: user?.id,
+        userRole: isAuthenticated ? role : 'ANON',
+      }).catch(() => {});
+    }
+  }, [activeView, isAuthenticated, role, user?.id, isLoading]);
 
   // Estado del sorteo en vivo autoritativo (Server Authoritative)
   const [liveDraw, setLiveDraw] = useState<AuthoritativeDraw>(() => {

@@ -5,7 +5,7 @@
 
 export type UserRole = 'PLAYER' | 'OPERATOR' | 'SUPERVISOR' | 'ADMIN' | 'SUPER_ADMIN';
 
-export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING_VERIFICATION';
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'BLOCKED' | 'PENDING_VERIFICATION';
 
 export type ModalityCode = 'BINGO_75' | 'BINGO_90' | 'ANIMALITOS' | 'OBJETOS' | 'CHAPITAS';
 
@@ -43,11 +43,13 @@ export interface Profile {
   status: UserStatus;
   role: UserRole;
   security_level: number;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
 
 export type ProfileRow = Profile;
+export type UserProfile = Profile;
 
 export interface GameModality {
   id: string;
@@ -56,10 +58,15 @@ export interface GameModality {
   grid_rows: number;
   grid_cols: number;
   has_free_center: boolean;
+  free_center?: boolean;
   total_numbers: number;
+  number_min?: number;
+  number_max?: number;
   description: string | null;
   is_active: boolean;
-  created_at: string;
+  config?: Record<string, unknown>;
+  total_balls?: number;
+  created_at?: string;
 }
 
 export interface GameRoom {
@@ -76,13 +83,17 @@ export interface Draw {
   id: string;
   room_id: string;
   draw_number: number;
+  draw_code?: string;
+  title?: string;
   status: DrawStatus;
   scheduled_at: string | null;
+  scheduled_for?: string | null;
   started_at: string | null;
   finished_at: string | null;
   server_seed: string | null;
   total_drawn_numbers: number[];
   current_number: number | null;
+  version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -100,13 +111,16 @@ export interface Card {
   id: string;
   draw_id: string;
   user_id: string | null;
+  owner_id?: string | null;
   card_number: number;
+  serial_number?: string;
   status: CardStatus;
   matrix: (number | string)[][];
   checksum: string;
   purchased_at: string | null;
   created_at: string;
 }
+
 
 export interface Wallet {
   id: string;

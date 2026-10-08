@@ -46,11 +46,81 @@ export interface UserProfile {
   full_name: string | null;
   display_name: string | null;
   phone: string | null;
+  national_id?: string | null;
+  is_identity_locked?: boolean;
+  identity_locked_at?: string | null;
   avatar_url: string | null;
   role: UserRole;
   status: UserStatus;
   security_level: number;
   created_at: string;
+  updated_at: string;
+}
+
+export type TicketSeverity = 'P0' | 'P1' | 'P2' | 'P3';
+export type TicketPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type TicketStatus =
+  | 'NEW'
+  | 'TRIAGED'
+  | 'QUEUED'
+  | 'ASSIGNED'
+  | 'IN_PROGRESS'
+  | 'WAITING_USER'
+  | 'ESCALATED'
+  | 'RESOLVED'
+  | 'CLOSED';
+
+export interface SupportTicket {
+  id: string;
+  player_id: string;
+  subject: string;
+  category: string;
+  severity: TicketSeverity;
+  priority: TicketPriority;
+  status: TicketStatus;
+  assigned_agent: string | null;
+  queue_position: number;
+  estimated_wait_seconds: number;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  first_response_at?: string | null;
+  resolved_at?: string | null;
+  closed_at?: string | null;
+}
+
+export interface SupportMessage {
+  id: string;
+  ticket_id: string;
+  sender_id: string | null;
+  sender_role: string;
+  message: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  read_at?: string | null;
+}
+
+export interface SupportFaq {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+  keywords: string[];
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface OrchestratorLease {
+  id: string;
+  current_draw_id: string | null;
+  current_phase: 'WAITING' | 'PREPARING' | 'SALES_OPEN' | 'SALES_CLOSING' | 'SALES_CLOSED' | 'VALIDATING' | 'READY' | 'ACTIVE' | 'PAUSED' | 'WINNER_PENDING' | 'FINISHED' | 'SETTLEMENT' | 'WAITING_NEXT' | 'CANCELLED';
+  phase_started_at: string;
+  phase_ends_at: string;
+  active_worker_id: string | null;
+  heartbeat_at: string;
+  cycle_counter: number;
+  metadata: Record<string, any>;
   updated_at: string;
 }
 

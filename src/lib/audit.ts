@@ -28,6 +28,7 @@ export type AuthAuditEventType =
   | 'SENSITIVE_ACTION_STARTED'
   | 'SENSITIVE_ACTION_COMPLETED'
   | 'SENSITIVE_ACTION_REJECTED'
+  | 'UNAUTHORIZED_ROUTE_ACCESS'
   | 'PAYMENT_METHOD_CHANGED'
   | 'WITHDRAWAL_REQUESTED'
   | 'WITHDRAWAL_APPROVED'
@@ -127,3 +128,42 @@ export async function recordAuthAudit(payload: AuditEventPayload): Promise<boole
     return false;
   }
 }
+
+export async function recordAuditLog(params: {
+  userId?: string | null;
+  actorRole: UserRole;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
+}): Promise<boolean> {
+  return recordAuthAudit({
+    action: params.action as any,
+    user_id: params.userId,
+    actor_role: params.actorRole,
+    metadata: {
+      ...params.metadata,
+      entity_type: params.entityType,
+      entity_id: params.entityId,
+    },
+  });
+}
+
+export async function logAuditEvent(params: {
+  action: string;
+  userId?: string | null;
+  actorRole?: UserRole;
+  metadata?: Record<string, unknown>;
+  entityType?: string;
+  entityId?: string | null;
+}): Promise<boolean> {
+  return recordAuditLog({
+    userId: params.userId,
+    actorRole: params.actorRole || 'PLAYER',
+    action: params.action,
+    entityType: params.entityType || 'SYSTEM',
+    entityId: params.entityId,
+    metadata: params.metadata,
+  });
+}
+

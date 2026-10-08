@@ -48,8 +48,8 @@ const rawUrl =
   defaultProductionUrl;
 
 const rawAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
   stored.key ||
   defaultProductionPublishableKey;
 
@@ -457,6 +457,8 @@ export function setCustomSupabaseCredentials(url: string, key: string): boolean 
   return false;
 }
 
+export const saveCustomSupabaseConfig = setCustomSupabaseCredentials;
+
 export function clearCustomSupabaseCredentials(): boolean {
   if (typeof window !== 'undefined') {
     try {
@@ -470,4 +472,51 @@ export function clearCustomSupabaseCredentials(): boolean {
   }
   return false;
 }
+
+export const clearCustomSupabaseConfig = clearCustomSupabaseCredentials;
+
+export const RealtimeChannels = {
+  room: (roomId: string) => supabase.channel(`room:${roomId}`),
+  draw: (drawId: string) => supabase.channel(`draw:${drawId}`),
+  player: (userId: string) => supabase.channel(`player:${userId}`),
+  operator: (operatorId: string) => supabase.channel(`operator:${operatorId}`),
+};
+
+/**
+ * Reclamo autoritativo de bingo validado directamente por PostgreSQL
+ */
+export async function claimBingoAuthoritative(
+  drawId: string,
+  cardId: string,
+  pattern: string = 'CARTON_LLENO'
+): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: false, error: 'Supabase no está configurado.' };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('claim_bingo_authoritative', {
+      p_draw_id: drawId,
+      p_card_id: cardId,
+      p_pattern: pattern,
+    });
+
+    if (error) {
+      return { success: false, error: error.message, message: error.message };
+    }
+
+    return {
+      success: true,
+      data,
+      message: (data as any)?.message || '¡Premio verificado y otorgado exitosamente!',
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'Error al reclamar bingo autoritativo.',
+      message: err?.message || 'Error al reclamar bingo autoritativo.',
+    };
+  }
+}
+
 

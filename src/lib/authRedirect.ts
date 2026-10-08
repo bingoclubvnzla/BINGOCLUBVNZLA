@@ -4,14 +4,22 @@
 // y validación de orígenes autorizados para Google OAuth y Email Confirmation.
 // ==============================================================================
 
+import {
+  CANONICAL_PRODUCTION_URL,
+  CANONICAL_PRODUCTION_HOST,
+  getCanonicalAppUrl,
+  getCanonicalAuthRedirectUrl,
+  isForbiddenVercelDeploymentHost,
+} from './canonicalConfig';
+
 /**
  * Lista de dominios/orígenes base autorizados para redirecciones en los distintos
  * entornos de Bingo Club VNZLA (Producción, Preview y Desarrollo local).
  */
 const DEFAULT_ALLOWED_ORIGINS: string[] = [
+  CANONICAL_PRODUCTION_URL,
   'https://bingoclub.com.ve',
   'https://www.bingoclub.com.ve',
-  'https://bingoclubvnzla.vercel.app',
 ];
 
 /**
@@ -96,6 +104,11 @@ export function isAllowedRedirectUrl(targetUrl: string, allowedOrigins: string[]
       return false;
     }
 
+    // 8. Rechazar terminantemente cualquier alias de deployment de Vercel no canónico
+    if (isForbiddenVercelDeploymentHost(parsed.hostname)) {
+      return false;
+    }
+
     // Combinar orígenes autorizados con el origen actual de la ventana si estamos en navegador
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
     const whitelist = [
@@ -110,10 +123,12 @@ export function isAllowedRedirectUrl(targetUrl: string, allowedOrigins: string[]
       parsed.hostname === '127.0.0.1' ||
       parsed.hostname.endsWith('.localhost');
 
-    // Permitir subdominios de vista previa autorizados de AI Studio / Cloud Run
+    // Permitir subdominios de vista previa autorizados de AI Studio / Cloud Run y Vercel
     const isAiStudioPreview =
-      parsed.hostname.endsWith('.run.app') ||
-      parsed.hostname.endsWith('.vercel.app');
+      parsed.hostname.endsWith('.run.app') || parsed.hostname.endsWith('.vercel.app');
+
+    // Es el dominio de producción canónico oficial
+    const isCanonicalProduction = parsed.hostname.toLowerCase() === CANONICAL_PRODUCTION_HOST;
 
     const isExplicitlyWhitelisted = whitelist.some((origin) => {
       try {
@@ -124,7 +139,7 @@ export function isAllowedRedirectUrl(targetUrl: string, allowedOrigins: string[]
       }
     });
 
-    return isExplicitlyWhitelisted || isLocalhost || isAiStudioPreview;
+    return isCanonicalProduction || isExplicitlyWhitelisted || isLocalhost || isAiStudioPreview;
   } catch {
     return false;
   }
@@ -132,23 +147,23 @@ export function isAllowedRedirectUrl(targetUrl: string, allowedOrigins: string[]
 
 /**
  * Obtiene la URL de redirección canónica y sanitizada para Supabase Auth OAuth o Email.
- * Si se pasa una ruta personalizada, la valida antes de componerla.
+ * En producción y en cualquier host de Vercel, SIEMPRE delega a la autoridad canónica:
+ * https://bingoclubvnzla.vercel.app
+ * Protegido contra la captura por previews o deployment aliases automáticos.
  */
 export function getSafeRedirectUrl(customPath = '/'): string {
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://bingoclub.com.ve';
-
-  if (!customPath || customPath === '/') {
-    return `${currentOrigin}/`;
+  if (
+    !customPath ||
+    typeof customPath !== 'string' ||
+    customPath === '/' ||
+    customPath.toLowerCase().includes('javascript') ||
+    customPath.toLowerCase().includes('data:') ||
+    customPath.toLowerCase().includes('vbscript:') ||
+    !customPath.startsWith('/') ||
+    !isAllowedRedirectUrl(customPath)
+  ) {
+    return getCanonicalAuthRedirectUrl('/');
   }
-
-  if (isAllowedRedirectUrl(customPath)) {
-    if (customPath.startsWith('http://') || customPath.startsWith('https://')) {
-      return customPath;
-    }
-    const cleanPath = customPath.startsWith('/') ? customPath : `/${customPath}`;
-    return `${currentOrigin}${cleanPath}`;
-  }
-
-  // Fallback seguro al origen principal en caso de URL no autorizada
-  return `${currentOrigin}/`;
+  return getCanonicalAuthRedirectUrl(customPath);
 }
+

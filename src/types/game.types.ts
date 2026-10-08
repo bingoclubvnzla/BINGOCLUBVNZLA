@@ -4,9 +4,10 @@
  * BINGO CLUB VNZLA ONLINE - Game Domain Types
  */
 
-import { ModalityCode, DrawStatus } from './database.types';
+import { ModalityCode, DrawStatus, GameModality, Draw, Card } from './database.types';
 
-export type { ModalityCode };
+export type { ModalityCode, DrawStatus, GameModality, Draw };
+export type BingoCard = Card;
 
 export interface AnimalitoItem {
   num: number | string;
