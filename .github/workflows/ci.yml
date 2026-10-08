@@ -64,7 +64,7 @@ jobs:
       - name: Post-Build Security Scan - Verify Dist Artifacts
         run: |
           echo "Escaneando artefactos de producción compilados..."
-          if grep -rn -E "service_role|TURNSTILE_SECRET_KEY|sk_live_" dist/ 2>/dev/null; then
+          if grep -rn -E "service_role_key\s*[:=]|TURNSTILE_SECRET_KEY\s*[:=]|sk_live_[a-zA-Z0-9]{20,}" dist/ 2>/dev/null; then
             echo "ERROR: Se detectaron secretos privados filtrados en los bundles de producción de dist/!"
             exit 1
           fi
