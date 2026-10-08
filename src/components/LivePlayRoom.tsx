@@ -4,7 +4,7 @@
 // Muestra: Número actual visible, historial completo, contadores y reconexión.
 // ==============================================================================
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { DrawSnapshot, ConnectionStatus } from '../types/realtimeEvents';
 import { DRAW_REALTIME_EVENTS } from '../types/realtimeEvents';
 import { getBallMetadata, getBingo75Letter, speakBallTTS } from '../lib/catalogs';
@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { BingoCard } from './BingoCard';
 import { WinCelebration, type WinCelebrationData } from './WinCelebration';
 import type { Card } from '../types/database';
+import { createDraw, createDrawSnapshot, type AuthoritativeDraw } from '../lib/drawEngine';
 import {
   Radio,
   Wifi,
@@ -32,8 +33,9 @@ import {
 } from 'lucide-react';
 
 interface LivePlayRoomProps {
-  initialSnapshot: DrawSnapshot;
-  onBackToLobby: () => void;
+  initialSnapshot?: DrawSnapshot;
+  draw?: AuthoritativeDraw;
+  onBackToLobby?: () => void;
   // Callback opcional si un operador/admin emite comandos desde la consola
   onOperatorEmitNext?: () => void;
   isOperatorOrAdmin?: boolean;
@@ -41,11 +43,24 @@ interface LivePlayRoomProps {
 
 export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
   initialSnapshot,
-  onBackToLobby,
+  draw,
+  onBackToLobby = () => {},
   onOperatorEmitNext,
   isOperatorOrAdmin = false,
 }) => {
-  const [snapshot, setSnapshot] = useState<DrawSnapshot>(initialSnapshot);
+  const fallbackSnapshot = useMemo(() => {
+    if (initialSnapshot) return initialSnapshot;
+    if (draw) {
+      return createDrawSnapshot(draw, draw.version || 1, draw.version || 1);
+    }
+    const d = createDraw('ADMIN', 'system-admin', {
+      modality_id: 'BINGO_75',
+      title: 'Sorteo Estelar Bingo 75 en Directo',
+    });
+    return createDrawSnapshot(d, 1, 1);
+  }, [initialSnapshot, draw]);
+
+  const [snapshot, setSnapshot] = useState<DrawSnapshot>(fallbackSnapshot);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
     isSupabaseConfigured ? 'SINCRONIZANDO' : 'EN_VIVO'
   );
@@ -64,7 +79,7 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
 
   // Cargar cartones reales del jugador para este sorteo
   useEffect(() => {
-    if (!user?.id || !isSupabaseConfigured) return;
+    if (!user?.id || !isSupabaseConfigured || !snapshot?.draw_id) return;
     let isMounted = true;
     setLoadingCards(true);
 
@@ -79,12 +94,16 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [user?.id, snapshot.draw_id]);
+  }, [user?.id, snapshot?.draw_id]);
 
   // Mantener snapshot actualizado si cambian las props
   useEffect(() => {
-    setSnapshot(initialSnapshot);
-  }, [initialSnapshot]);
+    if (initialSnapshot) {
+      setSnapshot(initialSnapshot);
+    } else if (draw) {
+      setSnapshot(createDrawSnapshot(draw, draw.version || 1, draw.version || 1));
+    }
+  }, [initialSnapshot, draw]);
 
   // Locución oficial automática mediante Web Speech API y chime sutil cuando el servidor emite una nueva balota
   useEffect(() => {
