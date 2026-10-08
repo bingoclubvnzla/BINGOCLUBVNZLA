@@ -31,6 +31,18 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       <div className="absolute top-10 right-10 w-72 h-72 bg-red-600/10 blur-[100px] pointer-events-none -z-10 rounded-full" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* Emblema Oficial Centrado */}
+        <div className="flex justify-center mb-6">
+          <div className="relative group">
+            <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-sky-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all opacity-70 animate-pulse" />
+            <img
+              src="/bingoclub.png"
+              alt="Bingo Club VNZLA"
+              className="relative w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </div>
+
         {/* Badge de Estado Actualizado */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-semibold mb-8 shadow-inner shadow-emerald-500/10">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>

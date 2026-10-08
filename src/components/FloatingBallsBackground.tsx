@@ -87,6 +87,21 @@ export const FloatingBallsBackground: React.FC = () => {
       className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none"
       aria-hidden="true"
     >
+      {/* Atmósfera de video oficial con fallback */}
+      <video
+        src="/fondo.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none transition-opacity duration-1000"
+        onError={(e) => {
+          (e.currentTarget as HTMLVideoElement).style.display = 'none';
+        }}
+      />
+      <div className="absolute inset-0 bg-[#060919]/60 pointer-events-none" />
+
       {/* Luces y auroras de fondo */}
       <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-indigo-600/15 rounded-full blur-[140px]" />
       <div className="absolute top-1/3 -left-40 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[130px]" />

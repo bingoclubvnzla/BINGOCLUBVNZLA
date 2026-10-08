@@ -69,9 +69,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, activeView, setActiv
             className="flex items-center gap-3 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-xl p-1 transition-transform active:scale-95"
             aria-label="Ir al inicio de Bingo Club Venezuela"
           >
-            {/* Esfera 3D de Bingo dorada con brillo */}
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl ball-sphere-gold text-slate-950 font-black text-xs tracking-tighter transition-all duration-300 group-hover:scale-110 shadow-lg shadow-amber-500/30">
-              <span className="font-display font-black text-sm drop-shadow-xs">BCV</span>
+            {/* Esfera 3D de Bingo dorada con brillo y logo oficial */}
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl ball-sphere-gold text-slate-950 font-black text-xs tracking-tighter transition-all duration-300 group-hover:scale-110 shadow-lg shadow-amber-500/30 overflow-hidden p-1">
+              <img src="/bingoclub.png" alt="Logo" className="w-full h-full object-contain drop-shadow-xs" />
               {/* Baliza de estado en línea */}
               <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 border-2 border-slate-950 shadow-xs" />
             </div>
