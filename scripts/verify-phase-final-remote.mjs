@@ -87,13 +87,13 @@ async function runAudit() {
           message: 'PGRST202: Función no encontrada en schema cache remoto (Confirma que migración 13 aún no fue corrida en remoto)'
         });
         console.log('❌ claim_bingo_authoritative: NO ENCONTRADA EN SCHEMA CACHE (PGRST202)');
-      } else if (claimErr.message.includes('No autenticado') || claimErr.message.includes('autenticación') || claimErr.message.includes('42501')) {
+      } else if (claimErr.message.includes('No autenticado') || claimErr.message.includes('autenticación') || claimErr.message.includes('42501') || claimErr.message.toLowerCase().includes('permission denied')) {
         results.bloqueo1.details.push({
           check: 'claim_bingo_authoritative registration',
           pass: true,
-          message: 'Función registrada y protegida contra invocación anónima'
+          message: 'Función registrada y protegida contra invocación anónima (Acceso denegado a anon)'
         });
-        console.log('✅ claim_bingo_authoritative: REGISTRADA Y PROTEGIDA POR REGLAS');
+        console.log('✅ claim_bingo_authoritative: REGISTRADA Y PROTEGIDA POR REGLAS (Bloqueo anónimo verificado)');
       } else {
         results.bloqueo1.details.push({
           check: 'claim_bingo_authoritative',
@@ -159,17 +159,27 @@ async function runAudit() {
   // ----------------------------------------------------------------------------
   // BALANCE TÉCNICO Y SÍNTESIS FORENSE
   // ----------------------------------------------------------------------------
+  const isBloqueo1Resolved = !results.bloqueo1.details.some(d => !d.pass);
+  const isBloqueo2Resolved = results.bloqueo2.status === 'ACTIVE';
+
   console.log('\n================================================================');
   console.log('📊 SÍNTESIS DE BLOQUEOS Y ESTADO TÉCNICO DE PRODUCCIÓN');
   console.log('================================================================');
-  console.log(`BLOQUEO 1 (Migración 13/14 en PostgreSQL Remoto): ${results.bloqueo1.details.some(d => !d.pass) ? '🔴 PENDIENTE EN REMOTO' : '🟢 RESUELTO'}`);
-  console.log(`BLOQUEO 2 (Turnstile Server-Side en Supabase Auth): ${results.bloqueo2.status === 'ACTIVE' ? '🟢 RESUELTO' : '🔴 PENDIENTE EN DASHBOARD'}`);
+  console.log(`BLOQUEO 1 (Migración 13/14 en PostgreSQL Remoto): ${isBloqueo1Resolved ? '🟢 RESUELTO' : '🔴 PENDIENTE EN REMOTO'}`);
+  console.log(`BLOQUEO 2 (Turnstile Server-Side en Supabase Auth): ${isBloqueo2Resolved ? '🟢 RESUELTO' : '🔴 PENDIENTE EN DASHBOARD'}`);
   console.log('----------------------------------------------------------------');
   console.log('ESTADO OFICIAL DE LA PLATAFORMA:');
-  console.log('🟡 PRODUCCIÓN FUNCIONAL — PRE-CERTIFICADA');
-  console.log('Motivo: Se mantiene el principio de honestidad técnica: NO emitir');
-  console.log('🟢 PRODUCCIÓN E2E CERTIFICADA hasta aplicar el script SQL consolidado');
-  console.log('en el editor remoto y activar Bot Protection en el dashboard.');
+  if (isBloqueo1Resolved && isBloqueo2Resolved) {
+    console.log('🟢 PRODUCCIÓN E2E CERTIFICADA');
+    console.log('Evidencia: Migraciones 13 y 14 activas en PostgreSQL remoto (claim_bingo_authoritative');
+    console.log('y RLS segregado verificado) + GoTrue Bot Protection (Cloudflare Turnstile)');
+    console.log('exigiendo token obligatorio en server-side.');
+  } else {
+    console.log('🟡 PRODUCCIÓN FUNCIONAL — PRE-CERTIFICADA');
+    console.log('Motivo: Se mantiene el principio de honestidad técnica: NO emitir');
+    console.log('🟢 PRODUCCIÓN E2E CERTIFICADA hasta aplicar el script SQL consolidado');
+    console.log('en el editor remoto y activar Bot Protection en el dashboard.');
+  }
   console.log('================================================================\n');
 
   return results;

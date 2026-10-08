@@ -1,0 +1,1329 @@
+================================================================================
+BINGO CLUB VNZLA ONLINE
+ESPECIFICACIONES COMPLETAS DEL PROYECTO — ESTADO ACTUAL
+================================================================================
+FECHA DE GENERACIÓN: 2026-10-06
+COMMIT ANALIZADO: N/A (Entorno de Contenedor AI Studio Applet / Código Fuente Verificado)
+BRANCH: main / production
+URL PRODUCCIÓN: https://bingoclubvnzla.vercel.app
+DEV PREVIEW URL: https://ais-pre-l6zd5uhk5hytvh7gleap7g-747880298878.us-east1.run.app
+VERSIÓN DETECTADA: react-example@0.0.0 (Vite v8.3.2 / React 19.0.1 / Tailwind v4.3.3)
+ESTADO: 🟡 PRODUCCIÓN FUNCIONAL — PRE-CERTIFICADA (Con Bloqueos Externos Declarados)
+================================================================================
+
+DOCUMENTO DE ESPECIFICACIÓN TÉCNICA, ARQUITECTURA, SISTEMA DE DISEÑO Y CONTRATO
+DE PRESERVACIÓN FUNCIONAL PARA REDISEÑO VISUAL DE ALTO NIVEL (TERCEROS / IA)
+
+================================================================================
+ÍNDICE GENERAL DE SECCIONES
+================================================================================
+1.  OBJETIVO DEL DOCUMENTO Y DIRECTRICES DE PRESERVACIÓN
+2.  INFORMACIÓN GENERAL DEL PRODUCTO Y PLATAFORMA
+3.  STACK TECNOLÓGICO Y VERSIONES EXACTAS
+4.  ESTRUCTURA COMPLETA DEL ÁRBOL DE ARCHIVOS
+5.  MAPA DE PANTALLAS Y ENRUTAMIENTO SPA
+6.  SISTEMA DE DISEÑO ACTUAL (DESIGN SYSTEM & TOKENS)
+7.  DISEÑO DETALLADO DE CADA PANTALLA Y COMPONENTE VISUAL
+8.  FLUJOS DE USUARIO REALES DE PUNTO A PUNTO
+9.  ARQUITECTURA DE AUTENTICACIÓN Y SEGURIDAD
+10. ESQUEMA DE BASE DE DATOS Y CATÁLOGO DE TABLAS (17 TABLAS)
+11. MODALIDADES OFICIALES DE BINGO Y CATÁLOGOS CRIOLLOS
+12. MOTOR DE SORTEOS (DRAW ENGINE) — SERVER AUTHORITATIVE
+13. MOTOR DE GANADORES (WINNER ENGINE) — ATOMIC CLAIM
+14. INFRAESTRUCTURA REALTIME Y PROTOCOLO WEBSOCKET
+15. ARQUITECTURA FINANCIERA Y GESTIÓN DE SALDOS (FASE 1)
+16. MATRIZ DE ROLES Y JERARQUÍA RBAC (5 NIVELES)
+17. INVENTARIO DE APIS, PROCEDIMIENTOS RPC Y SERVICIOS
+18. MATRIZ DE CLASIFICACIÓN DE ARCHIVOS POR RIESGO
+19. ZONAS SEGURAS PARA EL TRABAJO DE UN DISEÑADOR ("SAFE REDESIGN ZONES")
+20. ZONAS ESTRICTAMENTE PROHIBIDAS PARA MODIFICACIÓN ("FORBIDDEN ZONES")
+21. ESTADO ACTUAL DE CALIDAD Y SUITE DE PRUEBAS AUTOMATIZADAS
+22. ESTADO DE PRODUCCIÓN, CABECERAS CSP Y PROVEEDORES DE NUBE
+23. TABLA FORENSE DE PROBLEMAS, BLOQUEOS Y PENDIENTES (P0 - P3)
+24. REGLAS DE ORO PARA EL REDISEÑO VISUAL DE BINGO CLUB VNZLA
+25. DECLARACIÓN DE CONFIDENCIALIDAD Y ESCANEO DE SECRETOS
+================================================================================
+
+
+================================================================================
+1. OBJETIVO DEL DOCUMENTO Y DIRECTRICES DE PRESERVACIÓN
+================================================================================
+El presente archivo constituye la radiografía técnica y funcional exhaustiva de
+la plataforma "BINGO CLUB VNZLA ONLINE". Su propósito exclusivo es servir de guía
+maestra para un desarrollador frontend, diseñador UI/UX o modelo de inteligencia
+artificial que reciba la asignación de elevar la calidad estética, sofisticación visual,
+layout, iconografía, tipografía y experiencia de usuario (UX/UI) de la plataforma.
+
+REGLA FUNDAMENTAL DE TRABAJO:
+"Mejorar el diseño visual sin alterar, quebrar ni refactorizar la lógica operativa,
+los contratos de datos, las reglas criptográficas, el motor de sorteos, el sistema
+de autenticación ni la seguridad server-side existente."
+
+Este documento funciona como un CONTRATO TÉCNICO DE PRESERVACIÓN: cualquier cambio
+visual que colisione con las estructuras aquí detalladas se considera una regresión
+crítica que anula la certificación del sistema.
+
+
+================================================================================
+2. INFORMACIÓN GENERAL DEL PRODUCTO Y PLATAFORMA
+================================================================================
+- Nombre Oficial: Bingo Club Venezuela Online (Bingo Club Vnzla Online)
+- Sigla y Marca Corta: BCV (Insignia oficial en Navbar y Favicon)
+- Eslogan Oficial: "Bingo venezolano en vivo" / "Plataforma Oficial · Venezuela"
+- Descripción del Producto: Plataforma web de entretenimiento digital en tiempo
+  real especializada en las modalidades tradicionales de bingo venezolano
+  (Bingo 75 Clásico, Bingo 90 Tradicional, Bingo de los Animalitos, Bingo de
+  Objetos Criollos y Bingo Chapitas). Diseñada con sincronización WebSocket
+  autoritativa, integridad criptográfica por sorteo y validación matemática de
+  premios en el servidor.
+- Público Objetivo: Jugadores venezolanos dentro y fuera del país, comunidades
+  familiares y entusiastas del bingo criollo tradicional que exigen transparencia
+  inviolable, cero trampas mecánicas, locución de balotas y soporte multi-dispositivo.
+- URLs de Despliegue Detectadas:
+  * Producción Oficial (Vercel): https://bingoclubvnzla.vercel.app
+  * Dev / Preview (Google Cloud Run): https://ais-pre-l6zd5uhk5hytvh7gleap7g-747880298878.us-east1.run.app
+  * Backend / Base de Datos: Supabase Cloud (Región AWS / PostgreSQL 15+)
+  * Supabase Project ID: lfmavupbxfkxuzncfzzs
+  * Supabase URL: https://lfmavupbxfkxuzncfzzs.supabase.co
+  * Proveedor Anti-Bot / Verificación Humana: Cloudflare Turnstile
+- Estado Oficial Actual: 🟡 PRODUCCIÓN FUNCIONAL — PRE-CERTIFICADA
+  (La plataforma opera al 100% en base de código, 385 tests unitarios y 7 tests
+  E2E Playwright, con dos bloqueos externos de infraestructura pendientes de
+  activación en el dashboard de Supabase: script SQL de migración 13/14 y Bot
+  Protection GoTrue).
+
+
+================================================================================
+3. STACK TECNOLÓGICO Y VERSIONES EXACTAS
+================================================================================
+Información extraída directamente de package.json, package-lock.json y archivos
+de configuración del proyecto:
+
+NÚCLEO Y FRAMEWORK:
+- React: ^19.0.1 (React 19 con soporte para hooks modernos)
+- React DOM: ^19.0.1
+- TypeScript: ^7.0.2 (Modo estricto, target ES2022, moduleResolution bundler)
+- Vite: ^8.3.0 / v8.3.2 (Vite bundler ultrarrápido con Rolldown core)
+- Node.js Runtime objetivo: Node.js 22 LTS / 20+
+
+ESTILOS Y DISEÑO:
+- Tailwind CSS: ^4.3.3 (Tailwind v4 moderno importado vía @tailwindcss/vite)
+- Autoprefixer: ^10.4.21
+- Motion (Framer Motion moderno): ^12.23.24
+- Lucide React (Iconografía SVG oficial): ^0.546.0
+
+INTEGRACIONES EXTERNAS:
+- Supabase JS Client: @supabase/supabase-js ^2.117.2
+- Cloudflare Turnstile: Script oficial api.js con widget renderizado en SPA
+- Google GenAI SDK: @google/genai ^2.4.0
+- Web Speech API: Locución nativa en navegador (TTS) para el cante de balotas
+
+TESTING Y ASEGURAMIENTO DE CALIDAD:
+- Vitest: ^5.0.3 (Motor de pruebas unitarias y de integración rápida)
+- Playwright: @playwright/test ^1.63.0 (Pruebas E2E sobre Chromium)
+- TSX: ^4.21.0 (Ejecutor TypeScript para scripts de verificación)
+- ESBuild: ^0.28.0
+
+
+================================================================================
+4. ESTRUCTURA COMPLETA DEL ÁRBOL DE ARCHIVOS
+================================================================================
+El proyecto mantiene una separación estricta entre presentación, lógica de
+dominio, acceso a datos, contratos de tipos y baterías de auditoría:
+
+/ (Raíz del proyecto)
+├── index.html                    <- Entrada HTML5 con títulos, meta, OpenGraph y fuentes Google
+├── vite.config.ts                <- Configuración de Vite, plugins React/Tailwind, alias y env defines
+├── tsconfig.json                 <- Configuración TypeScript (ES2022, bundler, paths alias)
+├── package.json                  <- Dependencias, scripts npm y metadatos
+├── metadata.json                 <- Metadatos de la aplicación AI Studio
+├── playwright.config.ts          <- Configuración de Playwright E2E en headless Chromium
+├── vitest.config.ts              <- Configuración de suite Vitest
+├── dist/                         <- Bundle compilado de producción (HTML + CSS + JS minificado)
+├── src/                          <- Código fuente de la aplicación React
+│   ├── main.tsx                  <- Punto de entrada React 19 (createRoot en #root)
+│   ├── App.tsx                   <- Enrutador de vistas, gestión de F5, estados globales de sorteo
+│   ├── index.css                 <- Directiva Tailwind v4 (@import "tailwindcss";) y reglas de fuentes
+│   ├── assets/                   <- Recursos estáticos e imágenes locales
+│   │   └── images/               <- Fotografías de ambientación y emblemas oficiales
+│   │       ├── hero_bingo_luxury_vnzla_1791177748948.jpg
+│   │       ├── hero_bingo_venezuela_1791180080082.jpg
+│   │       ├── modalities_bingo_card_1791180089281.jpg
+│   │       ├── security_shield_insignia_1791180097622.jpg
+│   │       ├── bingo_hero_banner_1791225375124.jpg
+│   │       ├── bingo_venezuela_emblem_1791225386093.jpg
+│   │       ├── hero_bingo_venezuela_1791237100022.jpg
+│   │       └── modality_cards_deck_1791237108805.jpg
+│   ├── components/               <- Componentes React de UI y vistas
+│   │   ├── Navbar.tsx            <- Barra de navegación superior responsive, selector de rol y logout
+│   │   ├── LandingPage.tsx       <- Portal público, hero, catálogo de modalidades, FAQs, footer
+│   │   ├── ModalityCard.tsx      <- Tarjeta visual de presentación de cada modalidad de bingo
+│   │   ├── LivePlayRoom.tsx      <- Sala de juego en vivo, bolillero, historial y locución TTS
+│   │   ├── AuthModal.tsx         <- Modal de autenticación con Turnstile, Login, Registro, Recuperación
+│   │   ├── CloudflareTurnstile.tsx <- Widget desacoplado con máquina de estados anti-bot estable
+│   │   ├── PlayerDashboard.tsx   <- Consola del jugador (Sorteos, Cartones, Perfil, MFA, Step-Up)
+│   │   ├── OperatorDashboard.tsx <- Consola de operaciones (Supervisión de salas, incidencias)
+│   │   ├── AdminDashboard.tsx    <- Consola de administración general (Control de sorteos, usuarios)
+│   │   ├── SupabaseConfigModal.tsx   <- Modal de diagnóstico de variables Supabase
+│   │   ├── SupabaseDiagnosticModal.tsx <- Modal interactivo de diagnóstico de infraestructura
+│   │   ├── dashboard/            <- Paneles de control especializados por rol
+│   │   │   ├── SupervisorDashboard.tsx <- Consola de supervisor (Revisión de operaciones sensibles)
+│   │   │   └── SuperAdminDashboard.tsx <- Consola de superadministrador (Control total RBAC)
+│   │   └── mfa/                  <- Componentes de autenticación de segundo factor
+│   │       ├── MfaEnrollmentModal.tsx  <- Enrolamiento TOTP con código QR y clave secreta
+│   │       └── StepUpAuthModal.tsx     <- Desafío Step-Up para operaciones críticas
+│   ├── contexts/                 <- Proveedores de contexto React
+│   │   └── AuthContext.tsx       <- Estado global de usuario, perfil, rol, MFA y sesión Supabase
+│   ├── data/                     <- Datos estáticos y configuraciones de fallback
+│   │   └── modalities.ts         <- Metadatos y generadores de cartones de demostración
+│   ├── lib/                      <- Lógica de negocio pura, algoritmos y librerías auxiliares
+│   │   ├── supabase.ts           <- Cliente Supabase oficial, listeners de sesión y fallbacks
+│   │   ├── drawEngine.ts         <- Motor autoritativo de sorteos (CSPRNG, máquina de estados, hash)
+│   │   ├── catalogs.ts           <- Catálogos oficiales de las 5 modalidades criollas y locución TTS
+│   │   ├── rbac.ts               <- Funciones de validación de roles y permisos jerárquicos
+│   │   ├── adminIdentities.ts    <- Identidades administrativas oficiales e inmutables
+│   │   ├── security.ts           <- Generación de IDs seguros, hashing SHA-256, reglas Turnstile
+│   │   ├── mfaSecurity.ts        <- Reglas de negocio de MFA, teléfonos venezolanos y rate limits
+│   │   ├── audit.ts              <- Registro forense de auditoría en base de datos
+│   │   ├── realtime.ts           <- Utilidades de canales y suscripciones Realtime
+│   │   ├── state-machine.ts      <- Transiciones permitidas del sorteo
+│   │   └── constants.ts          <- Constantes globales de la plataforma
+│   ├── services/                 <- Capa de servicios para comunicación remota
+│   │   ├── adminService.ts       <- Llamadas RPC de administración, roles y sincronización
+│   │   └── mfaService.ts         <- Servicios de enrolamiento TOTP y transacciones Step-Up
+│   └── types/                    <- Definiciones TypeScript compartidas
+│       ├── database.ts           <- Tipos canónicos de la base de datos PostgreSQL
+│       ├── database.types.ts     <- Esquema tipado generado compatible con Supabase
+│       ├── auth.types.ts         <- Tipos de usuario, roles y credenciales
+│       ├── game.types.ts         <- Tipos de matrices de juego, celdas y cartones
+│       ├── realtimeEvents.ts     <- Eventos WebSocket y payloads de sorteos
+│       └── mfa.ts                <- Tipos de factores MFA y tokens Step-Up
+├── supabase/                     <- Definiciones de infraestructura Supabase
+│   ├── migrations/               <- 15 migraciones SQL históricas y correctivas
+│   │   ├── 20261005000000_initial_schema.sql
+│   │   ├── 20261005000001_rls_policies.sql
+│   │   ├── 20261005000002_security_hardening.sql
+│   │   ├── 20261005000003_draw_engine.sql
+│   │   ├── 20261005000004_modalities_75_catalogs_fix.sql
+│   │   ├── 20261005000005_chapitas_90_mapping.sql
+│   │   ├── 20261005000006_auth_hardening.sql
+│   │   ├── 20261005000007_remediate_rls_auto_enable.sql
+│   │   ├── 20261005000008_security_definer_hardening.sql
+│   │   ├── 20261005000009_security_step_up_auth.sql
+│   │   ├── 20261005000010_rbac_definitive_and_admin_identities.sql
+│   │   ├── 20261005000011_forensic_financial_step_up_hardening.sql
+│   │   ├── 20261005000012_security_advisor_remediation.sql
+│   │   ├── 20261005000013_fix_draw_permutation_authoritative.sql
+│   │   └── 20261005000014_harden_acl_and_public_wrappers.sql
+│   └── PHASE_FINAL_MIGRATION_DEPLOY.sql <- Script consolidado listo para el SQL Editor
+├── scripts/                      <- Scripts de auditoría y sondas forenses
+│   ├── verify-supabase-schema.mjs
+│   ├── verify-phase-2-8-deploy.mjs
+│   ├── verify-phase-2-8-4-security-advisor.mjs
+│   └── verify-phase-final-remote.mjs
+├── tests/                        <- Suite de pruebas unitarias y de integración (Vitest)
+│   ├── turnstile_auth_lifecycle.test.ts
+│   ├── phase_final_acl_wrappers.test.ts
+│   ├── phase_final_remediation.test.ts
+│   ├── draw-state-machine.test.ts
+│   ├── rbac-permissions.test.ts
+│   └── ... (36 archivos de prueba con 385 tests)
+├── e2e/                          <- Suite de pruebas E2E con Playwright (Chromium)
+│   ├── 01-production-health.spec.ts
+│   ├── 02-auth.spec.ts
+│   ├── 03-realtime.spec.ts
+│   ├── 04-draw-recovery.spec.ts
+│   ├── 05-security-boundaries.spec.ts
+│   └── 06-winner-claim.spec.ts
+└── docs/                         <- Informes técnicos y auditorías históricas
+
+
+================================================================================
+5. MAPA DE PANTALLAS Y ENRUTAMIENTO SPA
+================================================================================
+La aplicación opera como una Single Page Application (SPA) con enrutamiento por
+sincronización de URL (pushState y popState) sin recarga completa del navegador.
+
+--------------------------------------------------------------------------------
+PANTALLA 1: PORTAL PÚBLICO / LANDING PAGE
+--------------------------------------------------------------------------------
+- Nombre: LandingPage
+- Ruta URL: / (o /landing)
+- Función: Presentación de la marca, propuesta de valor, acceso al juego, catálogo
+  de modalidades tradicionales criollas, guía interactiva de pasos y preguntas frecuentes.
+- Tipo de Usuario: Público general, visitantes y jugadores no autenticados.
+- Componentes Principales:
+  * Hero Section con ambientación de salón de bingo y badge de plataforma oficial.
+  * Botones CTA: "ENTRAR AL JUEGO", "VER MODALIDADES".
+  * ModalityCard (componente reutilizable para cada una de las 5 modalidades).
+  * Sección "Cómo Jugar" con 4 etapas explicativas.
+  * Sección de Seguridad y Confianza (Transparencia en sorteos, Server-Authoritative).
+  * Acordeón de FAQs (#ayuda).
+  * Footer institucional con distintivos venezolanos y términos legales.
+- Acciones Disponibles:
+  * Clic en "ENTRAR AL JUEGO" -> abre AuthModal si no está autenticado, o redirige
+    a /player si tiene sesión activa.
+  * Clic en tarjeta de modalidad -> abre vista previa o conecta a la sala de juego.
+  * Desplazamiento por anclas: #modalidades, #como-jugar, #ayuda.
+- Datos que Muestra:
+  * Lista de modalidades con descripción, total de balotas, formato de cuadrícula.
+  * Garantías de transparencia e identificador público seguro.
+- Datos que Modifica: Ninguno (solo lectura).
+- Restricciones: Ninguna (acceso libre).
+- Estado Actual: 🟢 Totalmente funcional y pulido.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Layout, banners, tipografía, animaciones, espaciado).
+
+--------------------------------------------------------------------------------
+PANTALLA 2: MODAL DE AUTENTICACIÓN Y SEGURIDAD HUMANA
+--------------------------------------------------------------------------------
+- Nombre: AuthModal (con CloudflareTurnstile integrado)
+- Ruta URL: /login, /register, /recovery (o modal superpuesto)
+- Función: Portal de acceso universal, registro de nuevos jugadores, inicio de
+  sesión con Google OAuth o correo/contraseña, y recuperación de claves.
+- Tipo de Usuario: Visitantes y usuarios que desean autenticarse.
+- Componentes Principales:
+  * Selector de pestañas: "INICIAR SESIÓN", "REGISTRARSE".
+  * Widget CloudflareTurnstile (verificación anti-bot obligatoria).
+  * Botón Google OAuth (con logotipo oficial).
+  * Campos: Correo electrónico, Contraseña, Confirmación de Contraseña, Nombre Completo.
+  * Enlace "¿Olvidaste tu contraseña?" para flujo de recuperación.
+  * Mensajes de retroalimentación de error y éxito.
+- Acciones Disponibles:
+  * Resolver desafío Turnstile (activa token temporal).
+  * Clic en "CONTINUAR CON GOOGLE" (solo activo si Turnstile = VERIFICADO).
+  * Envío de formulario de login o registro (solo activo si Turnstile = VERIFICADO).
+  * Solicitud de reenvío de correo de confirmación.
+- Datos que Muestra:
+  * Estado de verificación anti-bot (NO_VERIFICADO, VERIFICANDO, VERIFICADO, EXPIRADO, ERROR).
+  * Alertas en caso de credenciales inválidas o correo no confirmado.
+- Datos que Modifica:
+  * Crea registros en auth.users y public.profiles al registrarse.
+  * Actualiza sesiones en localStorage / Supabase Session.
+- Restricciones:
+  * FAIL-CLOSED: Si Turnstile no se resuelve exitosamente, ningún método de
+    autenticación puede ser ejecutado.
+- Estado Actual: 🟢 Completamente operativo con ciclo de vida protegido.
+- Riesgo de Modificación para Diseñador:
+  🟡 ALTO RIESGO EN LÓGICA — El contenedor visual del modal puede estilizarse,
+  pero NO deben alterarse los atributos disabled, los estados de Turnstile ni los
+  manejadores onSubmit/onClick.
+
+--------------------------------------------------------------------------------
+PANTALLA 3: SALA DE JUEGO EN DIRECTO (LIVE PLAY ROOM)
+--------------------------------------------------------------------------------
+- Nombre: LivePlayRoom
+- Ruta URL: /play (o /play/:drawCode)
+- Función: Experiencia de sorteo en vivo. Muestra la balota actualmente cantada,
+  el tablero completo de balotas extraídas, contadores de balotas restantes,
+  indicadores de conexión WebSocket Realtime y locución vocal (TTS) en tiempo real.
+- Tipo de Usuario: Jugadores en juego, espectadores, operadores y administradores.
+- Componentes Principales:
+  * Cabecera de sala con código de sorteo (p. ej. BCV-S94A1F), título y modalidad.
+  * Indicador de conexión Realtime: EN_VIVO (verde pulsante), SINCRONIZANDO (amarillo)
+    o DESCONECTADO (rojo).
+  * Reloj oficial sincronizado en UTC.
+  * Botón de silencio/activación de locución TTS (SpeechSynthesis).
+  * Display principal de Balota Actual: Esfera tridimensional dorada/ámbar con
+    número gigante, letra (B, I, N, G, O) o nombre de la figura criolla.
+  * Cuadrícula histórica de balotas: Tablero 1..75 o 1..90 que resalta en color
+    ámbar brillante los números ya cantados y en gris oscuro los pendientes.
+  * Panel de control para Operador (si el usuario autenticado tiene rol OPERATOR+):
+    Botón "EMITIR SIGUIENTE BALOTA" para avanzar el sorteo.
+  * Botón "VOLVER AL LOBBY".
+- Acciones Disponibles:
+  * Escuchar la locución automática de cada balota cantada.
+  * Operador/Admin: Emitir siguiente balota (invoca emit_next_ball_authoritative).
+  * Volver a la cuenta o al portal.
+- Datos que Muestra:
+  * Balota actual, letra, subtexto criollo, total cantadas, total pendientes.
+  * Historial cronológico con timestamp de cada extracción.
+- Datos que Modifica:
+  * Si es operador: emite evento BALL_DRAWN vía WebSocket e incrementa la secuencia.
+- Restricciones:
+  * SERVER-AUTHORITATIVE: El frontend NUNCA inventa números ni altera el orden de
+    la permutación oficial.
+  * Si un jugador presiona F5, la sala se reconstruye instantáneamente desde el snapshot.
+- Estado Actual: 🟢 Operativo con recuperación F5 y deduplicación de eventos.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Estilo del bolillero, animación de la esfera de
+  balota, diseño del tablero de números, tipografía del número cantado).
+  ⚠️ NO TOCAR: La suscripción al canal WebSocket en useEffect ni speakBallTTS.
+
+--------------------------------------------------------------------------------
+PANTALLA 4: CONSOLA DEL JUGADOR (PLAYER DASHBOARD)
+--------------------------------------------------------------------------------
+- Nombre: PlayerDashboard
+- Ruta URL: /player
+- Función: Centro de mando del jugador registrado. Permite revisar sorteos activos,
+  consultar cartones adquiridos, historial de partidas, editar perfil y configurar
+  seguridad de la cuenta (MFA TOTP y actualización de Pago Móvil).
+- Tipo de Usuario: Jugador autenticado (Rol PLAYER o superior).
+- Componentes Principales:
+  * Tarjeta de resumen de usuario: Identificador público inmutable (BCV-XXXXXX),
+    insignia de rol, fecha de registro, indicador de correo verificado.
+  * Banner informativo obligatorio: "Función financiera próximamente disponible.
+    Fase 1: No se muestran saldos ficticios ni simulaciones monetarias."
+  * Menú de pestañas:
+    1. Sorteos ('sorteos'): Lista de sorteos activos con botón "ENTRAR A LA SALA".
+    2. Mis Cartones ('cartones'): Cuadrículas de cartones asignados con estado.
+    3. Historial ('historial'): Bitácora de actividad y sorteos anteriores.
+    4. Perfil ('perfil'): Formulario para editar nombre completo, nombre de
+       usuario y teléfono venezolano validado.
+    5. Seguridad ('seguridad'): Estado de MFA, botón para enrolar autenticador,
+       formulario protegido para cambiar Pago Móvil y botón de eliminación suave de cuenta.
+  * Modales: MfaEnrollmentModal y StepUpAuthModal.
+- Acciones Disponibles:
+  * Entrar a sala de sorteo activa.
+  * Actualizar datos personales de perfil.
+  * Enrolar factor TOTP (escaneo de código QR).
+  * Solicitar cambio de teléfono de Pago Móvil (requiere código TOTP de 6 dígitos).
+  * Solicitar retiro (simulado en Fase 1 con Step-Up).
+  * Solicitar eliminación de cuenta (con confirmación textual y Step-Up).
+- Datos que Muestra:
+  * Public ID del usuario, teléfono enmascarado (+58 412 *** **12).
+  * Cartones activos con sus matrices numéricas.
+  * Factores MFA activos y nivel de seguridad de la cuenta.
+- Datos que Modifica:
+  * Actualiza public.profiles (full_name, display_name, phone, pago_movil_phone).
+  * Registra auditoría en public.audit_logs.
+- Restricciones:
+  * Si el usuario no ha iniciado sesión, /player muestra la pantalla bloqueada con
+    icono de candado y botón "INICIAR SESIÓN".
+- Estado Actual: 🟢 Totalmente funcional.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Presentación de las pestañas, tarjetas de
+  cartones, disposición de inputs, banners informativos).
+
+--------------------------------------------------------------------------------
+PANTALLA 5: CONSOLA DE OPERACIONES (OPERATOR DASHBOARD)
+--------------------------------------------------------------------------------
+- Nombre: OperatorDashboard
+- Ruta URL: /operator
+- Función: Consola de control para operadores de salas. Supervisión de salas de
+  juego, control de sorteos, atención a incidencias y monitoreo de jugadores.
+- Tipo de Usuario: OPERATOR, SUPERVISOR, ADMIN, SUPER_ADMIN.
+- Componentes Principales:
+  * Encabezado operativo con badge azul/sky y nivel de acceso.
+  * Banner de estado: "Sin operaciones financieras activadas. Fase 1: Módulos de
+    conciliación bancaria deshabilitados por diseño."
+  * Pestañas operativas: Jugadores, Incidencias, Auditoría, Recargas, Pagos, Retiros.
+  * Lista de incidencias de prueba para soporte.
+- Acciones Disponibles:
+  * Monitorear estado de jugadores por identificador público.
+  * Consultar incidencias de soporte.
+- Restricciones:
+  * Bloqueo estricto por RBAC: Si un PLAYER intenta ingresar, se le deniega el
+    acceso con mensaje explicativo y botón para volver a su cuenta.
+- Estado Actual: 🟢 Operativo bajo las restricciones de la Fase 1.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Tablas, tarjetas de estado, paneles informativos).
+
+--------------------------------------------------------------------------------
+PANTALLA 6: CONSOLA DE SUPERVISIÓN (SUPERVISOR DASHBOARD)
+--------------------------------------------------------------------------------
+- Nombre: SupervisorDashboard
+- Ruta URL: /supervisor
+- Función: Módulo de supervisión intermedia (Fase 2.9). Revisión de operaciones de
+  alto valor, aprobación en dos pasos y auditoría operativa.
+- Tipo de Usuario: SUPERVISOR, ADMIN, SUPER_ADMIN (Nivel 30+).
+- Componentes Principales:
+  * Badge índigo de supervisión.
+  * Lista de operaciones pendientes que requieren segunda aprobación.
+  * Integración con StepUpAuthModal para autorizar liberaciones sensibles.
+- Acciones Disponibles:
+  * Aprobar operación con verificación de segundo factor TOTP del supervisor.
+- Restricciones:
+  * Bloqueado para PLAYER y OPERATOR.
+- Estado Actual: 🟢 Operativo con Step-Up Auth integrado.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Tablas de aprobación, modales de confirmación).
+
+--------------------------------------------------------------------------------
+PANTALLA 7: CONSOLA DE ADMINISTRACIÓN (ADMIN DASHBOARD)
+--------------------------------------------------------------------------------
+- Nombre: AdminDashboard
+- Ruta URL: /admin
+- Función: Consola de gestión global del sistema. Control atómico del ciclo de
+  vida de sorteos (máquina de estados), gestión de modalidades, supervisión de
+  usuarios y auditoría del sistema.
+- Tipo de Usuario: ADMIN, SUPER_ADMIN (Nivel 40+).
+- Componentes Principales:
+  * Encabezado con badge rojo/rose de administrador.
+  * Panel de sorteos con control de transiciones atómicas:
+    READY -> ACTIVE -> PAUSED -> FINISHED -> ARCHIVED.
+  * Módulo de usuarios y roles con control de concurrencia optimista (versión v1, v2).
+  * Visor de bitácora de auditoría.
+- Acciones Disponibles:
+  * Crear sorteo, iniciar sorteo, pausar, reanudar o finalizar.
+  * Cambiar estados de sorteo respetando la máquina de estados.
+- Restricciones:
+  * Bloqueado por RBAC para roles inferiores a ADMIN.
+- Estado Actual: 🟢 Operativo y probado en Playwright.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Diseño del pipeline de estados, métricas, tablas).
+
+--------------------------------------------------------------------------------
+PANTALLA 8: CONSOLA DE SUPER ADMINISTRADOR (SUPER ADMIN DASHBOARD)
+--------------------------------------------------------------------------------
+- Nombre: SuperAdminDashboard
+- Ruta URL: /super-admin
+- Función: Consola de máxima jerarquía y soberanía administrativa. Asignación y
+  modificación de roles de usuarios, activación/bloqueo de cuentas, auditoría
+  forense completa y sincronización de identidades oficiales.
+- Tipo de Usuario: Exclusivo para rol SUPER_ADMIN (Nivel 50).
+- Componentes Principales:
+  * Badge rojo carmesí de máxima jerarquía con escudo de seguridad.
+  * Sincronizador de Identidades Oficiales (v19629049@gmail.com, etc.).
+  * Buscador y tabla de usuarios con selector de rol (PLAYER, OPERATOR, SUPERVISOR, ADMIN).
+  * Desafío obligatorio Step-Up TOTP para cada cambio de rol o bloqueo.
+- Acciones Disponibles:
+  * Sincronizar identidades administrativas canónicas con la base de datos.
+  * Modificar roles de usuarios con token Step-Up.
+  * Bloquear o suspender usuarios con motivo justificado.
+- Restricciones:
+  * Acceso estrictamente bloqueado para cualquier usuario distinto de SUPER_ADMIN.
+- Estado Actual: 🟢 Certificado con 16 pruebas RBAC específicas en Vitest.
+- Riesgo de Modificación para Diseñador:
+  🟢 VISUAL — SE PUEDE REDISEÑAR (Layout del panel, tablas de usuarios, badges).
+
+
+================================================================================
+6. SISTEMA DE DISEÑO ACTUAL (DESIGN SYSTEM & TOKENS)
+================================================================================
+La aplicación utiliza un tema visual de estilo "Casino de Lujo Contemporáneo /
+Atmósfera Nocturna Venezolana" montado sobre Tailwind CSS v4.
+
+6.1 PALETA DE COLORES
+- Fondo Principal (Canvas):
+  * bg-slate-950 (#020617) — Fondo negro profundo con leve matiz azulino nocturno.
+- Fondos de Superficie y Tarjetas (Cards & Panels):
+  * bg-slate-900 (#0f172a) — Contenedores primarios, paneles y tablas.
+  * bg-slate-900/60 con backdrop-blur-md — Modales y cabeceras flotantes.
+  * border-slate-800 (#1e293b) — Bordes estándar de paneles y divisores.
+  * border-slate-850 (#172033) — Separador sutil de cabecera en Navbar.
+- Acento Primario — Oro / Ámbar Venezolano (Brand Accent):
+  * Gradiente distintivo: from-amber-400 via-amber-500 to-amber-600
+  * Texto y destacados: text-amber-400 (#fbbf24), text-amber-300 (#fcd34d)
+  * Resplandores y sombras: shadow-amber-500/20, shadow-lg shadow-amber-500/10
+  * Fondos tenues: bg-amber-500/10 con borde border-amber-500/30
+- Colores por Rol Operativo (RBAC Hierarchy Tokens):
+  * SUPER_ADMIN: Rose / Carmesí intenso (bg-rose-600, text-rose-400, border-rose-500/30)
+  * ADMIN: Rose / Rojo administración (bg-rose-500/20, text-rose-400)
+  * SUPERVISOR: Indigo / Púrpura ejecutivo (bg-indigo-500/20, text-indigo-400)
+  * OPERATOR: Sky / Azul operativo (bg-sky-500/20, text-sky-400, border-sky-500/30)
+  * PLAYER: Ámbar / Dorado lúdico (bg-amber-500/10, text-amber-400)
+- Estados de Comunicación y Notificación:
+  * Éxito (Success): Emerald (text-emerald-400, bg-emerald-950/30, border-emerald-500/30)
+  * Error / Peligro (Destructive): Rose / Red (text-rose-400, bg-rose-950/30, border-rose-500/30)
+  * Advertencia (Warning): Amber (text-amber-400, bg-amber-950/30, border-amber-500/30)
+  * Conexión en Vivo: Emerald con animación pulsante (animate-pulse)
+
+6.2 TIPOGRAFÍA
+Se configuran dos familias tipográficas mediante Google Fonts en index.html:
+- Tipografía de Texto y Contenido (Body Font):
+  * Familia: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif
+  * Pesos utilizados: 300 (Light), 400 (Regular), 500 (Medium), 600 (Semi-bold), 700 (Bold)
+  * Uso: Textos explicativos, etiquetas de formularios, navegación, tablas, descripciones.
+- Tipografía de Títulos y Números Emblemáticos (Display Font):
+  * Familia: 'Syne', sans-serif (definida mediante clase .font-display)
+  * Pesos utilizados: 600 (Semi-bold), 700 (Bold), 800 (Extra-bold)
+  * Uso: Título principal "BINGO CLUB VNZLA", nombres de modalidades, números de
+    balotas en la sala de juego, identificador público del usuario y títulos de paneles.
+- Elementos Monospace:
+  * Identificadores de auditoría, hashes SHA-256, UUIDs y secuencias criptográficas
+    utilizan font-mono o tabular-nums para alineación estricta de cifras.
+
+6.3 COMPONENTES VISUALES BASE
+- Botón Primario ("ENTRAR AL JUEGO", "REGISTRARME"):
+  * Fondo: bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600
+  * Texto: text-slate-950, font-bold, text-xs o text-sm
+  * Borde: redondeado rounded-xl o rounded-lg
+  * Efecto: hover:from-amber-300 hover:to-amber-500, active:scale-[0.98], shadow-md shadow-amber-500/20
+  * Cursor: cursor-pointer con transition-all
+- Botón Secundario / Outline:
+  * Fondo: bg-slate-900 hover:bg-slate-800
+  * Borde: border border-slate-800 hover:border-slate-700
+  * Texto: text-slate-300 hover:text-white, text-xs o text-sm
+- Botón Destructivo:
+  * Fondo: bg-rose-950/30 hover:bg-rose-950/60
+  * Borde: border border-rose-500/30
+  * Texto: text-rose-300
+- Tarjetas (Cards):
+  * Contenedor redondeado con rounded-2xl o rounded-xl
+  * Fondo bg-slate-900/80 o bg-slate-900 con border border-slate-800
+  * Padding estándar de p-6 o p-8
+- Modales:
+  * Overlay con fondo fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50
+  * Contenedor centralizado con max-w-md o max-w-lg, border border-slate-800, shadow-2xl
+- Inputs y Campos de Formulario:
+  * Fondo bg-slate-950 o bg-slate-900
+  * Borde border border-slate-800 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50
+  * Texto text-slate-100 placeholder:text-slate-500
+  * Icono de contexto a la izquierda (Mail, Lock, User, Phone)
+- Indicadores de Estado (Badges):
+  * Pequeñas píldoras redondeadas rounded-full px-2.5 py-0.5 text-[11px] font-semibold
+  * Ejemplo en vivo: bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
+
+6.4 RESPONSIVE Y ADAPTABILIDAD
+- Móvil (< 640px):
+  * Navbar colapsa a menú hamburguesa desplegable con fondo bg-slate-950.
+  * Rejilla de modalidades pasa a 1 columna.
+  * Bolillero y tablero de números en LivePlayRoom se apilan verticalmente.
+  * Botones CTA ocupan ancho completo (w-full).
+- Tablet (640px - 1024px):
+  * Rejilla de modalidades pasa a 2 columnas.
+  * Pestañas de dashboards con desplazamiento horizontal si desbordan.
+- Escritorio (> 1024px):
+  * Contenedor centrado con max-w-7xl mx-auto px-4 sm:px-6 lg:px-8.
+  * Rejilla de modalidades a 3 columnas.
+  * LivePlayRoom muestra el bolillero gigante a la izquierda y el tablero de 75/90 balotas a la derecha.
+
+
+================================================================================
+7. DISEÑO DETALLADO DE CADA PANTALLA Y COMPONENTE VISUAL
+================================================================================
+
+7.1 NAVBAR (src/components/Navbar.tsx)
+- Posición: Sticky top-0 con z-index 40 y fondo translúcido backdrop-blur-md.
+- Altura fija: h-16 (64px) con borde inferior border-b border-slate-850.
+- Distribución:
+  * Izquierda: Logotipo BCV dentro de cuadrado dorado (h-10 w-10 rounded-xl) +
+    Texto "BINGO CLUB VNZLA" en Syne font-extrabold + Subtítulo "Bingo venezolano en vivo".
+  * Centro: Enlaces públicos ("Inicio", "Sala en Vivo" con punto pulsante verde,
+    "Modalidades", "Cómo jugar", "Ayuda") + Menú de roles exclusivo si está autenticado
+    (Operador, Supervisor, Admin, Super Admin).
+  * Derecha:
+    - No autenticado: Botón "INICIAR SESIÓN" (texto tenue) + Botón "REGISTRARME" (dorado).
+    - Autenticado: Botón "ENTRAR AL JUEGO", Botón "MI CUENTA (BCV-XXXXXX)" con icono de usuario,
+      Botón "CERRAR SESIÓN" con icono LogOut.
+    - Móvil: Botón hamburguesa (Menu / X) para abrir el menú móvil desplegable.
+
+7.2 LANDING PAGE (src/components/LandingPage.tsx)
+- Hero Section:
+  * Imagen de fondo ambiental: hero_bingo_luxury_vnzla_1791177748948.jpg al 25% de
+    opacidad con gradiente negro inferior para máxima legibilidad tipográfica.
+  * Tagline flotante con icono de chispas: "Plataforma Oficial · Venezuela".
+  * Encabezado H1 gigante en Syne: "BINGO CLUB VNZLA".
+  * Subtítulo dorado H2: "Bingo venezolano en vivo".
+  * Párrafo institucional destacando la administración de cartones y salas activas.
+  * Botones de acción principales: "ENTRAR AL JUEGO" (dorado brillante con icono Play),
+    "VER MODALIDADES" (outline slate con icono Grid3X3).
+  * 4 Sellos de confianza inferiores: "Tiempo Real", "5 Modalidades", "Transparencia Total", "Soporte 24/7".
+- Sección Modalidades (#modalidades):
+  * Título de sección: "NUESTRAS MODALIDADES OFICIALES" con descripción criolla.
+  * Rejilla de tarjetas ModalityCard con selector interactivo de detalles.
+- Sección Cómo Jugar (#como-jugar):
+  * 4 pasos secuenciales ilustrados con números circulares dorados:
+    1. Registro seguro, 2. Selección de sala, 3. Adquisición de cartones, 4. Cante de bingo.
+- Sección Preguntas Frecuentes (#ayuda):
+  * Acordeón de 5 preguntas críticas con animación de apertura suave (ChevronDown).
+- Footer Institucional:
+  * Franja superior con degradado tricolor sutil conmemorativo de Venezuela.
+  * Enlaces de navegación, política de juego responsable y descargo legal de transparencia.
+
+7.3 SALA DE JUEGO EN VIVO (src/components/LivePlayRoom.tsx)
+- Encabezado de la partida:
+  * Botón "Volver al Lobby", código público del sorteo (BCV-SXXXXXX), modalidad activa,
+    reloj UTC en tiempo real e indicador de estado de conexión WebSocket.
+- Bolillero Central (Display de Balota Cantada):
+  * Esfera de alta presencia visual: círculo de gran tamaño (h-36 w-36 a h-48 w-48) con
+    borde dorado brillante, fondo oscuro y sombra ámbar profunda.
+  * Si la modalidad es BINGO_75: Muestra la letra oficial (B, I, N, G, O) arriba y el
+    número gigante (1-75) en el centro.
+  * Si la modalidad es ANIMALITOS u OBJETOS: Muestra el número grande y el nombre
+    criollo de la figura (p. ej. "39 · El Chigüire" o "07 · La Arepa").
+  * Icono de altavoz para silenciar/activar la locución automática TTS.
+- Tablero Maestro de Balotas (Board Matrix):
+  * Para Bingo 75: 5 filas (B, I, N, G, O) con 15 números cada una (del 1 al 75).
+    Cada celda es un círculo o cuadrado redondeado. Si ya fue cantada: fondo ámbar dorada
+    con número oscuro; si no ha sido cantada: gris pizarra apagado.
+  * Para Bingo 90: Cuadrícula organizada del 1 al 90 con iluminación idéntica.
+- Historial de Extracción:
+  * Cinta horizontal o lista vertical con las últimas 10 balotas extraídas en orden cronológico.
+
+7.4 MODAL DE AUTENTICACIÓN (src/components/AuthModal.tsx)
+- Modal centrado en pantalla sobre fondo oscuro difuminado.
+- Encabezado con selector tipo "Tabs": "Iniciar Sesión" vs "Registrarme".
+- Sección Superior: Botón destacado "Continuar con Google" con logotipo auténtico.
+- Separador visual: "o continúa con correo electrónico".
+- Formulario de credenciales: Inputs con iconos a la izquierda y bordes suaves.
+- Contenedor de Verificación Anti-Bot (Cloudflare Turnstile):
+  * Widget centrado con marco sutil y texto de estado "Verificación de seguridad humana".
+  * Muestra icono de verificación verde cuando el desafío es superado con éxito.
+- Botón de Envío: "INICIAR SESIÓN" o "CREAR CUENTA" (bloqueado con cursor-not-allowed
+  y opacidad reducida hasta que Turnstile esté completado).
+
+
+================================================================================
+8. FLUJOS DE USUARIO REALES DE PUNTO A PUNTO
+================================================================================
+
+8.1 FLUJO DE VISITANTE A JUGADOR REGISTRADO:
+1. El usuario accede a la URL raíz (https://bingoclubvnzla.vercel.app/).
+2. Visualiza la landing page con la ambientación del club y modalidades.
+3. Hace clic en "REGISTRARME" o "ENTRAR AL JUEGO".
+4. Se abre AuthModal en modo 'register'.
+5. El usuario debe resolver el desafío de Cloudflare Turnstile:
+   * Mientras Turnstile esté en NO_VERIFICADO, los botones permanecen bloqueados.
+   * Al completarse, Turnstile pasa a VERIFICADO y emite el token.
+6. El usuario ingresa Nombre Completo, Correo Electrónico y Contraseña segura.
+7. Hace clic en "CREAR CUENTA NUEVA".
+8. El cliente invoca supabase.auth.signUp() enviando captchaToken a Supabase GoTrue.
+9. El trigger de base de datos genera automáticamente el perfil en public.profiles
+   asignando el identificador público inmutable (BCV-XXXXXX) y rol PLAYER.
+10. Se notifica al usuario que revise su bandeja de entrada si se requiere confirmación.
+11. Al confirmar la sesión, es redirigido automáticamente a su consola /player.
+
+8.2 FLUJO DE JUGADOR PARTICIPANDO EN UN SORTEO EN VIVO:
+1. El jugador inicia sesión y se ubica en /player.
+2. En la pestaña "Sorteos", visualiza las partidas en estado READY o ACTIVE.
+3. Selecciona la modalidad deseada (p. ej. Bingo de los Animalitos) y hace clic en
+   "ENTRAR A LA SALA".
+4. La SPA navega a /play sin recargar la página.
+5. El componente LivePlayRoom se conecta al canal Realtime draw:{id}.
+6. El servidor emite una nueva balota mediante emit_next_ball_authoritative.
+7. La sala recibe el evento WebSocket BALL_DRAWN.
+8. El display central actualiza la balota con animación y la API SpeechSynthesis
+   pronuncia en voz alta en español venezolano: "¡Treinta y nueve, El Chigüire!".
+9. El tablero maestro ilumina la casilla 39.
+10. Si el jugador presiona F5 (recarga accidental):
+    * useEffect ejecuta recoverActiveDrawFromDB().
+    * Consulta public.draws en Supabase.
+    * Reconstruye el estado de balotas cantadas sin perder la sincronización.
+
+8.3 FLUJO DE OPERADOR INICIANDO Y CONDUCIENDO UN SORTEO:
+1. El operador inicia sesión con su cuenta autorizada (p. ej. bingobingovnz@gmail.com).
+2. Es dirigido a /operator o navega a /play con rol OPERATOR.
+3. En la sala de juego, el panel del operador muestra el botón "EMITIR SIGUIENTE BALOTA".
+4. El operador presiona el botón.
+5. El sistema invoca la función autoritativa emitNextBall() verificando la versión optimista.
+6. Se extrae la siguiente balota de la permutación criptográfica generada previamente
+   con CSPRNG al momento de iniciar el sorteo.
+7. Se transmite el payload a todos los jugadores conectados vía WebSocket Realtime broadcast.
+8. Si se alcanza la última balota de la modalidad, el sorteo pasa a estado FINISHED.
+
+8.4 FLUJO DE RECLAMO DE GANADOR (WINNER CLAIM ENGINE):
+1. El jugador completa en su cartón el patrón requerido (LÍNEA o CARTÓN LLENO).
+2. Presiona el botón "¡CANTAR BINGO!".
+3. El frontend invoca la función RPC public.claim_bingo_authoritative(p_draw_id, p_card_id, p_pattern).
+4. El motor en PostgreSQL toma bloqueo transaccional FOR UPDATE sobre el sorteo y el cartón.
+5. Comprueba que el cartón pertenezca al usuario autenticado (v_card.user_id = auth.uid()).
+6. Evalúa matemáticamente que todos los números del cartón estén contenidos en v_draw.drawn_numbers.
+7. Si cumple, registra atómicamente al ganador en public.winners, marca el cartón como WON,
+   asigna el premio en public.prizes y emite el evento WINNER_AWARDED con hash criptográfico.
+8. Si un segundo jugador reclama el mismo cartón, el motor detecta la idempotencia y
+   retorna already_claimed: true sin duplicar registros financieros.
+
+
+================================================================================
+9. ARQUITECTURA DE AUTENTICACIÓN Y SEGURIDAD
+================================================================================
+
+9.1 SUPABASE AUTH & GOTRUE
+- Tipo de Sesión: JWT estándar de Supabase almacenado en localStorage bajo la clave
+  del cliente con renovación automática de token de refresco (autoRefreshToken: true).
+- Métodos Soportados:
+  * Correo Electrónico + Contraseña (signInWithPassword / signUp).
+  * Google OAuth (signInWithOAuth con provider: 'google', skipBrowserRedirect: false).
+  * Recuperación de contraseña (resetPasswordForEmail) con flujo de actualización (updateUser).
+- Identificadores Públicos:
+  * A cada usuario se le genera un public_id inmutable de formato BCV-XXXXXX (ej. BCV-948120).
+  * El correo electrónico y el UUID interno de auth.users NUNCA se exponen a otros jugadores.
+
+9.2 CLOUDFLARE TURNSTILE (PROTECCIÓN ANTI-BOT)
+- Implementación Frontend:
+  * Componente CloudflareTurnstile.tsx desacoplado y protegido con máquina de estados:
+    NO_VERIFICADO -> VERIFICANDO -> VERIFICADO -> EXPIRADO -> ERROR.
+  * Site Key pública oficial: 0x4AAAAAAFOjgftMybjD3w5c.
+  * En entornos PRODUCTION y PREVIEW, opera bajo modo FAIL-CLOSED estricto: si el widget
+    no resuelve un token o la configuración está ausente, todos los botones de acceso
+    permanecen inhabilitados.
+  * Estabilidad del Widget: Los callbacks están aislados en referencias mutables (useRef)
+    para impedir re-renderizados continuos o recreaciones innecesarias del iframe.
+- Implementación Backend (GoTrue Bot Protection):
+  * PENDIENTE DE ACTIVACIÓN EN DASHBOARD: Requiere configurar la Turnstile Secret Key
+    en el panel de Supabase Auth para que el gateway rechace peticiones sin token.
+
+9.3 AUTENTICACIÓN DE SEGUNDO FACTOR (MFA RFC 6238 TOTP)
+- Implementación: Compatible con Google Authenticator, Microsoft Authenticator y 1Password.
+- Enrolamiento: Genera código QR y clave secreta mediante supabase.auth.mfa.enroll().
+- Obligatoriedad por Rol:
+  * SUPER_ADMIN y ADMIN: MFA estrictamente obligatorio por política de seguridad.
+  * SUPERVISOR: MFA obligatorio para autorizar operaciones sensibles.
+  * PLAYER y OPERATOR: MFA opcional recomendado.
+
+9.4 AUTORIZACIÓN STEP-UP PARA OPERACIONES CRÍTICAS
+- Transacciones protegidas por Step-Up:
+  * Modificación de número de Pago Móvil del jugador.
+  * Solicitud de retiro de fondos.
+  * Eliminación suave de cuenta (Soft Deletion).
+  * Cambio de rol o bloqueo de usuario por parte de un administrador.
+  * Desactivación de factor MFA.
+- Flujo Step-Up: Genera un token temporal de desafío en public.step_up_authorizations
+  que solo se valida tras ingresar un código TOTP de 6 dígitos válido en los últimos 5 minutos.
+
+
+================================================================================
+10. ESQUEMA DE BASE DE DATOS Y CATÁLOGO DE TABLAS (17 TABLAS)
+================================================================================
+PostgreSQL 15+ en Supabase Cloud. Todas las tablas poseen Row Level Security (RLS)
+activado de forma obligatoria y estricta.
+
+1. public.profiles
+   - Propósito: Perfil de usuario extendido asociado a auth.users.
+   - Columnas Clave: id (UUID PK -> auth.users), public_id (VARCHAR(16) UNIQUE),
+     full_name (TEXT), display_name (TEXT), phone (VARCHAR(32)), role (VARCHAR(32)),
+     status (VARCHAR(32)), security_level (INT), mfa_enabled (BOOLEAN),
+     pago_movil_phone (VARCHAR(32)), pago_movil_bank (VARCHAR(64)), created_at, updated_at.
+   - RLS: Los usuarios solo pueden ver y editar su propio perfil; lectura restringida.
+
+2. public.game_modalities
+   - Propósito: Catálogo maestro de las modalidades de juego oficiales.
+   - Columnas Clave: id (VARCHAR(32) PK: BINGO_75, BINGO_90, ANIMALITOS, OBJETOS, CHAPITAS),
+     name (TEXT), description (TEXT), total_balls (INT), grid_rows (INT), grid_cols (INT),
+     has_free_center (BOOLEAN), config (JSONB), is_active (BOOLEAN), display_order (INT).
+   - RLS: Lectura pública anónima y autenticada (USING is_active = true); escritura solo ADMIN.
+
+3. public.modality_catalogs
+   - Propósito: Catálogos de elementos culturales criollos para Animalitos y Objetos (75 ítems c/u).
+   - Columnas Clave: id (VARCHAR(32) PK), modality_id (VARCHAR(32)), number (INT),
+     name (TEXT), tts_name (TEXT), tts_article (TEXT), tts_phrase (TEXT),
+     asset_key (TEXT), is_active (BOOLEAN).
+   - RLS: Lectura pública; escritura solo ADMIN.
+
+4. public.chapitas_mappings
+   - Propósito: Mapeo oficial de las 90 chapitas (1-45 Animales, 46-90 Objetos).
+   - Columnas Clave: id (SERIAL PK), chapitas_number (INT 1-90 UNIQUE),
+     source_type (VARCHAR(16)), source_catalog_id (VARCHAR(32)), source_number (INT).
+   - RLS: Lectura pública; escritura solo ADMIN.
+
+5. public.game_rooms
+   - Propósito: Salas de juego organizadas por modalidad.
+   - Columnas Clave: id (UUID PK), code (VARCHAR(16) UNIQUE), name (TEXT),
+     modality_id (VARCHAR(32)), max_players (INT), is_private (BOOLEAN), status (VARCHAR(16)).
+   - RLS: Lectura autenticada; gestión por OPERATOR o superior.
+
+6. public.draws
+   - Propósito: Sorteos oficiales y registro de su estado de ejecución.
+   - Columnas Clave: id (UUID PK), room_id (UUID), modality_id (VARCHAR(32)),
+     draw_number (BIGINT UNIQUE), public_code (VARCHAR(16) UNIQUE), title (TEXT),
+     status (VARCHAR(32): DRAFT, SCHEDULED, READY, ACTIVE, PAUSED, FINISHED, CANCELLED, ARCHIVED),
+     version (INT), permutation (INT[]), drawn_numbers (INT[]), current_sequence (INT),
+     metadata (JSONB), created_at, updated_at.
+   - RLS: Lectura para jugadores; creación y transición exclusiva mediante wrappers autoritativos.
+
+7. public.draw_events
+   - Propósito: Cadena inmutable de eventos del sorteo con hashing forense (Hash Chain).
+   - Columnas Clave: id (UUID PK), draw_id (UUID), sequence_number (INT),
+     event_type (VARCHAR(64)), ball_number (INT), previous_event_hash (TEXT),
+     event_hash (TEXT), payload (JSONB), created_at.
+   - RLS: Lectura pública del sorteo; inserción estrictamente por motor del servidor.
+
+8. public.cards
+   - Propósito: Cartones emitidos a jugadores para un sorteo específico.
+   - Columnas Clave: id (UUID PK), draw_id (UUID), user_id (UUID), card_serial (VARCHAR(32)),
+     grid_layout (JSONB), status (VARCHAR(32): ISSUED, PLAYING, WON, CANCELLED), purchased_at.
+   - RLS: El jugador solo puede ver sus propios cartones; operadores pueden auditar.
+
+9. public.card_numbers
+   - Propósito: Normalización relacional de las casillas de cada cartón para validación SQL rápida.
+   - Columnas Clave: id (BIGSERIAL PK), card_id (UUID), row_pos (INT), col_pos (INT),
+     number_value (INT), is_marked (BOOLEAN).
+   - RLS: Visible solo para el dueño del cartón.
+
+10. public.prizes
+    - Propósito: Premios configurados para cada sorteo (Línea, Cartón Lleno, etc.).
+    - Columnas Clave: id (UUID PK), draw_id (UUID), name (TEXT), prize_type (VARCHAR(32)),
+      amount (NUMERIC(14,2)), status (VARCHAR(32): PENDING, AWARDED, CANCELLED).
+    - RLS: Lectura pública del sorteo; adjudicación solo por motor de ganadores.
+
+11. public.winners
+    - Propósito: Registro histórico de reclamos ganadores validados por el servidor.
+    - Columnas Clave: id (UUID PK), draw_id (UUID), prize_id (UUID), user_id (UUID),
+      card_id (UUID), validated_by_engine (BOOLEAN), awarded_at.
+    - RLS: Lectura pública; inserción exclusiva vía claim_bingo_authoritative.
+
+12. public.wallets
+    - Propósito: Billetera del usuario para saldos en moneda nacional (Bolívares).
+    - Columnas Clave: id (UUID PK), user_id (UUID UNIQUE), currency (VARCHAR(8) DEFAULT 'VES'),
+      balance_available (NUMERIC(14,2)), balance_locked (NUMERIC(14,2)), status (VARCHAR(32)).
+    - RLS: Solo el propietario puede ver su billetera; transacciones por ledger.
+
+13. public.wallet_transactions
+    - Propósito: Libro mayor inmutable (Double-entry / Ledger) de movimientos financieros.
+    - Columnas Clave: id (UUID PK), wallet_id (UUID), idempotency_key (VARCHAR(64) UNIQUE),
+      transaction_type (VARCHAR(32)), amount (NUMERIC(14,2)), balance_before, balance_after,
+      status (VARCHAR(32)), reference_code (TEXT), transaction_hash (TEXT).
+    - RLS: Visible solo por el propietario; inserción mediante procedimientos autorizados.
+
+14. public.payment_requests
+    - Propósito: Solicitudes de recarga o retiro mediante Pago Móvil / Transferencia.
+    - Columnas Clave: id (UUID PK), user_id (UUID), request_type (VARCHAR(32)),
+      amount (NUMERIC(14,2)), bank_name (TEXT), reference_number (TEXT), status (VARCHAR(32)).
+    - RLS: Creadas por el usuario; aprobadas por OPERATOR o SUPERVISOR con Step-Up.
+
+15. public.step_up_authorizations
+    - Propósito: Registro de autorizaciones temporales mediante segundo factor (MFA).
+    - Columnas Clave: id (UUID PK), user_id (UUID), action_type (VARCHAR(64)),
+      risk_level (VARCHAR(16)), expires_at (TIMESTAMPTZ), is_consumed (BOOLEAN),
+      consumed_at (TIMESTAMPTZ), ip_hash (TEXT), user_agent_hash (TEXT).
+    - RLS: Solo accesible por procedimientos SECURITY DEFINER y usuario autenticado.
+
+16. public.audit_logs
+    - Propósito: Pista forense inmutable de eventos de seguridad y autenticación.
+    - Columnas Clave: id (BIGSERIAL PK), user_id (UUID), actor_role (VARCHAR(32)),
+      action (VARCHAR(64)), entity_type (VARCHAR(64)), entity_id (TEXT),
+      ip_hash (TEXT), metadata (JSONB), created_at.
+    - RLS: Inserción autorizada; lectura reservada para roles de auditoría (ADMIN, SUPER_ADMIN).
+
+17. public.app_settings
+    - Propósito: Parámetros globales de la plataforma y banderas de fase.
+    - Columnas Clave: key (VARCHAR(64) PK), value (JSONB), description (TEXT), updated_at.
+    - RLS: Lectura para configuración del cliente; modificación solo SUPER_ADMIN.
+
+
+================================================================================
+11. MODALIDADES OFICIALES DE BINGO Y CATÁLOGOS CRIOLLOS
+================================================================================
+
+1. BINGO 75 CLÁSICO (BINGO_75)
+   - Bolillero: 75 balotas (1 al 75).
+   - Cartón: Cuadrícula de 5 filas x 5 columnas (25 casillas).
+   - Casilla Central: Libre (FREE CENTER con emblema BCV).
+   - Columnas: B (1-15), I (16-30), N (31-45), G (46-60), O (61-75).
+   - Patrones de Victoria: Línea Horizontal, Línea Vertical, Diagonales, 4 Esquinas, Cartón Lleno.
+   - Cante TTS: Anuncia letra y número: "¡B, doce!", "¡N, cuarenta!".
+
+2. BINGO 90 TRADICIONAL (BINGO_90)
+   - Bolillero: 90 balotas (1 al 90).
+   - Cartón: Cuadrícula de 3 filas x 9 columnas.
+   - Distribución: Exactamente 5 números por fila (total 15 números por cartón) y 4 espacios vacíos.
+   - Patrones de Victoria: Línea (5 números en una fila), Doble Línea, Bingo Pleno (15 números).
+   - Cante TTS: Anuncia número directo: "¡Número ochenta y siete!".
+
+3. BINGO DE LOS ANIMALITOS (ANIMALITOS)
+   - Bolillero: Exactamente 75 números (1 al 75).
+   - Catálogo Oficial: 75 figuras tradicionales de la fauna criolla venezolana.
+     * 1: El Delfín, 2: El Carnero, 3: El Toro, 4: El Ciempiés, 5: El Alacrán...
+     * 39: El Chigüire, 40: El Cunaguaro, 41: La Guacamaya, 42: El Turpial, 43: El Oso Frontino...
+     * 75: La Babilla.
+   - Cartón: Cuadrícula de 5x5 con centro libre, ilustrada con figuras y nombres criollos.
+   - Cante TTS: Anuncia número y nombre criollo: "¡Treinta y nueve, El Chigüire!".
+
+4. BINGO DE OBJETOS CRIOLLOS (OBJETOS)
+   - Bolillero: Exactamente 75 números (1 al 75).
+   - Catálogo Oficial: 75 símbolos y elementos representativos de la cultura venezolana.
+     * Arepa, Cuatro, Arpa, Maracas, Liquiliqui, Chinchorro, Tinaja, Totuma, Alpargatas,
+       Sombrero de Cogollo, Budare, Papelón con Limón, Pabellón Criollo, etc.
+   - Cartón: Cuadrícula de 5x5 con centro libre y arte iconográfico.
+   - Cante TTS: Anuncia número y objeto: "¡Siete, La Arepa!".
+
+5. BINGO CHAPITAS (CHAPITAS)
+   - Bolillero: Exactamente 90 números (1 al 90).
+   - Mapeo Oficial Criollo:
+     * Chapitas 1 a 45: Corresponden a los primeros 45 Animalitos del catálogo oficial.
+     * Chapitas 46 a 90: Corresponden a los primeros 45 Objetos Populares.
+   - Cartón: Formato ágil y dinámico para partidas relámpago con estilo tradicional callejero.
+   - Cante TTS: Pronuncia el nombre del animalito u objeto mapeado con su respectivo artículo.
+
+
+================================================================================
+12. MOTOR DE SORTEOS (DRAW ENGINE) — SERVER AUTHORITATIVE
+================================================================================
+Principio Fundamental: Cero generación de números en el cliente. Cero uso de
+Math.random(). El servidor es la única autoridad de los sorteos.
+
+1. Generador Criptográfico (CSPRNG):
+   - Implementado en PostgreSQL y en lib/drawEngine.ts utilizando exclusivamente
+     fuentes de entropía criptográfica (crypto.getRandomValues en Web/Node, o
+     gen_random_bytes / sha256 en PostgreSQL).
+   - Algoritmo: Fisher-Yates shuffle con enteros de 32 bits no sesgados.
+   - Rango canónico: 1..total_balls (1..75 o 1..90) sin sesgo de época ni ceros.
+
+2. Cadena Inmutable de Hashing (Hash Chaining):
+   - Cada evento emitido calcula un digest criptográfico SHA-256:
+     sha256(drawId:sequenceNumber:eventType:payload:previousEventHash:timestamp)
+   - Impide la manipulación retroactiva o la alteración del orden de balotas cantadas.
+
+3. Máquina de Estados Finita:
+   - Estados: DRAFT -> SCHEDULED -> READY -> ACTIVE <-> PAUSED -> FINISHED -> ARCHIVED.
+   - Terminal: ARCHIVED y CANCELLED.
+   - Las transiciones se validan atómicamente con avance de versión optimista (versión v1 -> v2).
+
+4. Reconstrucción y Recuperación F5:
+   - La función rebuildFromSnapshot() deduplica eventos recibidos por WebSocket
+     y detecta si existen brechas de secuencia (sequence gaps) solicitando un snapshot
+     fresco a la base de datos si el cliente perdió paquetes durante una desconexión.
+
+
+================================================================================
+13. MOTOR DE GANADORES (WINNER ENGINE) — ATOMIC CLAIM
+================================================================================
+Implementado en el procedimiento almacenado public.claim_bingo_authoritative.
+
+1. Bloqueo Transaccional Atómico:
+   - Ejecuta SELECT ... FOR UPDATE sobre la fila del sorteo (public.draws) y sobre
+     el cartón (public.cards).
+   - Previene condiciones de carrera cuando decenas de jugadores cantan bingo
+     en la misma fracción de segundo.
+
+2. Verificación de Propiedad Inviolable:
+   - Valida que v_card.user_id = auth.uid(). Un jugador jamás puede cantar bingo
+     utilizando el cartón de otra persona.
+
+3. Validación Matemática de Patrones:
+   - CARTÓN LLENO: Ejecuta bool_and(cn.number_value = ANY(v_draw.drawn_numbers))
+     comprobando que todas las casillas del cartón estén en el historial de balotas.
+   - LÍNEA: Evalúa mediante series generate_series(0, 4) si alguna fila horizontal
+     o columna vertical de 5 casillas está completamente contenida en drawn_numbers.
+
+4. Idempotencia y Asignación de Premios:
+   - Si el cartón ya fue validado previamente, retorna already_claimed: true con el
+     winner_id existente sin duplicar transacciones de premio.
+   - Adjudica el premio en public.prizes y registra el evento con hash forense.
+
+
+================================================================================
+14. INFRAESTRUCTURA REALTIME Y PROTOCOLO WEBSOCKET
+================================================================================
+- Proveedor: Supabase Realtime Gateway (Canales WebSockets sobre Phoenix Channels).
+- Nombres de Canal:
+  * draw:{drawId} — Canal exclusivo de la sala de juego activa.
+  * audit:realtime-check — Canal efímero para sondas de salud.
+- Eventos de Transmisión (Broadcast Events):
+  * DRAW_STARTED: Notifica el inicio del sorteo y apertura de balotas.
+  * BALL_DRAWN: Emite la balota extraída, letra, nombre criollo, secuencia y hash.
+  * DRAW_PAUSED: Notifica pausa técnica por el operador.
+  * DRAW_RESUMED: Notifica reanudación del sorteo.
+  * DRAW_FINISHED: Notifica culminación de todas las balotas o adjudicación mayor.
+  * WINNER_AWARDED: Notifica en tiempo real que un cartón ha sido premiado.
+- Manejo de Desconexión:
+  * El cliente detecta pérdida de conexión, muestra el estado SINCRONIZANDO y ejecuta
+    un polling de reconciliación contra Supabase para recuperar el estado exacto.
+
+
+================================================================================
+15. ARQUITECTURA FINANCIERA Y GESTIÓN DE SALDOS (FASE 1)
+================================================================================
+Principio Fundamental de Fase 1: HONESTIDAD TÉCNICA.
+- La plataforma NO muestra saldos ficticios ni simulaciones monetarias engañosas.
+- En PlayerDashboard y OperatorDashboard se exhibe de forma explícita el aviso:
+  "Función financiera próximamente disponible. Fase 1: Módulos de conciliación
+  bancaria y pasarela de pago en bolívares deshabilitados por diseño."
+- Arquitectura Preparada para Fase Futura:
+  * Libro mayor de doble entrada (public.wallet_transactions) con hash chaining.
+  * Transacciones con clave de idempotencia única (UUID).
+  * Soporte para Pago Móvil venezolano (banco emisor, teléfono, cédula, referencia).
+  * Aprobación obligatoria de retiros mediante Step-Up MFA.
+
+
+================================================================================
+16. MATRIZ DE ROLES Y JERARQUÍA RBAC (5 NIVELES)
+================================================================================
+Jerarquía numérica estricta definida en src/lib/adminIdentities.ts y en PostgreSQL:
+
+1. SUPER_ADMIN (Jerarquía 50 / Nivel Máximo)
+   - Identidad Oficial: v19629049@gmail.com
+   - Capacidades: Control total del sistema, asignación de cualquier rol inferior
+     a ADMIN, activación/bloqueo de cuentas, auditoría forense completa, configuración global.
+
+2. ADMIN (Jerarquía 40)
+   - Identidad Oficial: bingoclubvnzla@gmail.com
+   - Capacidades: Gestión general de sorteos, asignación de roles inferiores
+     (PLAYER, OPERATOR, SUPERVISOR), configuración de modalidades y salas.
+
+3. SUPERVISOR (Jerarquía 30)
+   - Capacidades: Supervisión de operaciones de alto impacto, segunda aprobación
+     de solicitudes financieras, auditoría en tiempo real de sorteos.
+
+4. OPERATOR (Jerarquía 20)
+   - Identidad Oficial: bingobingovnz@gmail.com
+   - Capacidades: Operación de sorteos en vivo (iniciar, pausar, emitir balotas,
+     finalizar), monitoreo de salas y soporte a jugadores.
+
+5. PLAYER (Jerarquía 10)
+   - Capacidades: Participación en sorteos, compra de cartones, consulta de salas,
+     cantar bingo, editar perfil propio y configurar su propia seguridad MFA.
+   - Denegaciones Estrictas: No puede crear sorteos, no puede emitir balotas, no puede
+     acceder a paneles administrativos ni ver datos de otros jugadores.
+
+
+================================================================================
+17. INVENTARIO DE APIS, PROCEDIMIENTOS RPC Y SERVICIOS
+================================================================================
+Procedimientos almacenados en PostgreSQL con envoltorio de seguridad:
+
+1. public.create_draw_authoritative(p_room_id, p_modality_id, p_title)
+   - Contexto: SECURITY DEFINER (search_path = public, extensions, pg_temp)
+   - Permiso: Solo OPERATOR, SUPERVISOR, ADMIN, SUPER_ADMIN.
+   - Función: Crea sorteo y genera permutación criptográfica 1..N.
+
+2. public.start_draw_authoritative(p_draw_id)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Solo OPERATOR o superior.
+   - Función: Cambia estado a ACTIVE y prepara el bolillero.
+
+3. public.emit_next_ball_authoritative(p_draw_id)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Solo OPERATOR o superior.
+   - Función: Avanza el bolillero y canta la siguiente balota de la secuencia.
+
+4. public.claim_bingo_authoritative(p_draw_id, p_card_id, p_pattern)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Jugador autenticado propietario del cartón.
+   - Función: Bloqueo transaccional FOR UPDATE, validación matemática de patrón y premio.
+
+5. public.request_step_up_authorization(p_action_type, p_risk_level, p_metadata)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Usuario autenticado.
+   - Función: Inicia desafío de segundo factor para operaciones sensibles.
+
+6. public.execute_update_pago_movil(p_auth_id, p_phone, p_bank)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Usuario autenticado con token Step-Up verificado.
+
+7. public.execute_admin_change_role(p_auth_id, p_target_user_id, p_new_role, p_idempotency_key)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Solo ADMIN o SUPER_ADMIN con token Step-Up.
+
+8. public.execute_admin_toggle_user_status(p_auth_id, p_target_user_id, p_status, p_reason)
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Solo ADMIN o SUPER_ADMIN con token Step-Up.
+
+9. public.sync_official_admin_identities()
+   - Contexto: SECURITY DEFINER.
+   - Permiso: Solo ADMIN o SUPER_ADMIN.
+   - Función: Sincroniza correos de fundadores con sus roles correspondientes en profiles.
+
+
+================================================================================
+18. MATRIZ DE CLASIFICACIÓN DE ARCHIVOS POR RIESGO
+================================================================================
+
+[CRÍTICO — NO TOCAR BAJO NINGÚN CONCEPTO]
+- supabase/migrations/* (Historial de base de datos inmutable)
+- supabase/PHASE_FINAL_MIGRATION_DEPLOY.sql (Script consolidado de producción)
+- src/lib/drawEngine.ts (Motor criptográfico y autoritativo de sorteos)
+- src/lib/catalogs.ts (Catálogos y mapeos numéricos oficiales)
+- src/lib/rbac.ts & src/lib/adminIdentities.ts (Matriz de roles y seguridad)
+- src/lib/security.ts & src/lib/mfaSecurity.ts (Funciones de hashing y límites)
+- src/services/adminService.ts & src/services/mfaService.ts (Contratos RPC)
+- tests/* & e2e/* (Baterías de pruebas de certificación)
+
+[ALTO RIESGO — MANEJAR CON EXTREMO CUIDADO]
+- src/App.tsx (Enrutador principal, recuperación F5 y control de vistas)
+- src/contexts/AuthContext.tsx (Proveedor global de sesión Supabase)
+- src/components/CloudflareTurnstile.tsx (Widget anti-bot y máquina de estados)
+- src/components/AuthModal.tsx (Contratos de login y registro)
+- src/components/mfa/StepUpAuthModal.tsx (Desafío de segundo factor)
+
+[MEDIO — AJUSTES DE LAYOUT PERMITIDOS RESPETANDO CONTRATOS]
+- src/components/Navbar.tsx (Barra de navegación y menú móvil)
+- src/components/LivePlayRoom.tsx (Sala de juego — bolillero y tablero visual)
+- src/components/PlayerDashboard.tsx (Consola del jugador y formularios)
+- src/components/OperatorDashboard.tsx (Consola de operaciones)
+- src/components/AdminDashboard.tsx (Consola de administración)
+- src/components/dashboard/* (Consolas de supervisor y superadmin)
+
+[VISUAL — TOTALMENTE SEGURO PARA REDISEÑO VISUAL]
+- src/index.css (Tokens de Tailwind v4, estilos globales, fuentes)
+- src/components/LandingPage.tsx (Hero, banners, textos, cards, FAQs, footer)
+- src/components/ModalityCard.tsx (Diseño visual de las tarjetas de modalidad)
+- src/assets/images/* (Fotografías, banners, isotipos y recursos gráficos)
+
+
+================================================================================
+19. ZONAS SEGURAS PARA REDISEÑO ("QUÉ PUEDE MODIFICAR UN DISEÑADOR")
+================================================================================
+Un diseñador UI/UX o desarrollador frontend puede intervenir libremente en:
+
+1. Estética Global y Colores:
+   - Ajustar matices del degradado dorado/ámbar en botones y bordes.
+   - Refinar el contraste de fondos (slate-950 a combinaciones con transparencias o blur).
+   - Añadir sombras difusas (drop-shadows, glow effects) a elementos destacados.
+
+2. Tipografía y Jerarquía Visual:
+   - Modificar tamaños de fuente (text-sm, text-base, text-xl, text-4xl).
+   - Ajustar line-height (leading), espaciado entre letras (tracking) y peso tipográfico.
+   - Reorganizar la jerarquía de títulos y subtítulos en la Landing Page.
+
+3. Componente de Bolillero y Balotas (LivePlayRoom):
+   - Rediseñar visualmente la esfera 3D de la balota cantada (sombras, reflejos, texturas).
+   - Añadir animaciones CSS suaves al momento de ingresar una nueva balota.
+   - Mejorar el diseño de la cuadrícula de 75 o 90 balotas para que parezca un tablero
+     electrónico de sala real de bingo.
+
+4. Tarjetas de Modalidades (ModalityCard y LandingPage):
+   - Diseñar marcos con relieves dorados, insignias o tarjetas coleccionables.
+   - Añadir iconografía temática para Animalitos y Objetos Criollos.
+
+5. Consola del Jugador (PlayerDashboard):
+   - Rediseñar la presentación de las pestañas (tabs).
+   - Mejorar el diseño visual de los cartones de bingo (aspecto de cartón impreso tradicional).
+   - Embellecer la tarjeta de perfil y las insignias de seguridad.
+
+6. Responsive y Experiencia Móvil:
+   - Optimizar el espaciado y padding en pantallas de smartphones pequeños.
+   - Mejorar la ergonomía de los botones para interacción táctil con el pulgar.
+
+
+================================================================================
+20. ZONAS QUE NO DEBEN MODIFICARSE ("FORBIDDEN ZONES")
+================================================================================
+Está TERMINANTEMENTE PROHIBIDO alterar:
+
+1. Lógica y Ciclo de Vida de Cloudflare Turnstile:
+   - NO eliminar el widget ni los callbacks onVerify, onExpire, onError.
+   - NO saltarse la condición isTurnstileVerified en los botones de login o registro.
+   - NO remover el modo Fail-Closed.
+
+2. Motor de Sorteos y Sincronización Realtime:
+   - NO generar números aleatorios en React con Math.random().
+   - NO modificar la suscripción a canales WebSocket ni el formato de los eventos.
+   - NO eliminar la función rebuildFromSnapshot ni la recuperación ante F5.
+
+3. Seguridad y Autoridad del Servidor:
+   - NO modificar los procedimientos RPC ni sus nombres de parámetros.
+   - NO tocar las migraciones SQL en supabase/migrations/.
+   - NO alterar las reglas de Row Level Security (RLS) ni los permisos de roles.
+   - NO modificar la validación de contraseñas, correos o teléfonos venezolanos.
+
+4. Baterías de Pruebas:
+   - NO eliminar ni deshabilitar pruebas en tests/ o e2e/.
+   - Todo rediseño debe pasar limpiamente npm run test (385 tests) y npx playwright test (7 tests).
+
+
+================================================================================
+21. ESTADO ACTUAL DE CALIDAD Y SUITE DE PRUEBAS AUTOMATIZADAS
+================================================================================
+Resultados reales verificados empíricamente en la auditoría de Octubre 2026:
+
+1. Pruebas Unitarias y de Integración (Vitest v5.0.3):
+   - Comando: npm run test
+   - Resultado: 36 Archivos de Prueba / 385 Tests PASADOS (0 Fallos).
+   - Tiempo de ejecución: ~11.3 segundos.
+   - Cobertura: Draw Engine, Winner Engine, Turnstile Lifecycle, RBAC, RLS, Modalities,
+     MFA Step-Up, Integración Supabase, Catálogos y Prevención de Fraude.
+
+2. Pruebas End-to-End (Playwright v1.63.0 en Chromium Headless):
+   - Comando: npm run test:e2e
+   - Resultado: 7 / 7 Flujos E2E PASADOS (0 Fallos).
+   - Tiempo de ejecución: ~6.8 segundos.
+   - Pruebas E2E Validadas:
+     ✓ 01 - Production Health & Headers (200 OK, CSP, títulos)
+     ✓ 02 - Authentication & Turnstile Security (Render del widget y bloqueo)
+     ✓ 03 - Live Play & Realtime Indicators (Sala en vivo y balotas)
+     ✓ 04 - Draw Recovery & F5 Reload (Persistencia de sala tras recarga F5)
+     ✓ 05 - Security Boundaries (/admin bloqueado para anónimos)
+     ✓ 05 - Security Boundaries (/super-admin bloqueado con candado)
+     ✓ 06 - Winner Claim Security Boundaries (Rechazo a reclamos no autorizados)
+
+3. Chequeo de Tipos TypeScript:
+   - Comando: npm run typecheck (tsc --noEmit)
+   - Resultado: 0 Errores de tipado. Salida limpia.
+
+4. Compilación de Producción:
+   - Comando: npm run build (vite build)
+   - Resultado: Compilación exitosa en 1.26 segundos.
+   - Salida generada en dist/:
+     * dist/index.html (1.45 kB)
+     * dist/assets/index-D33AYBmj.css (67.04 kB / gzip: 10.61 kB)
+     * dist/assets/index-9USYo1o-.js (989.93 kB / gzip: 251.04 kB)
+
+
+================================================================================
+22. ESTADO DE PRODUCCIÓN, CABECERAS CSP Y PROVEEDORES DE NUBE
+================================================================================
+- Plataforma de Hosting Frontend: Vercel (Production) / Google Cloud Run (Preview).
+- Dominio de Producción: https://bingoclubvnzla.vercel.app
+- Content Security Policy (CSP):
+  * Cabeceras de seguridad estrictas configuradas en vercel.json.
+  * script-src permite 'self', Cloudflare Turnstile (challenges.cloudflare.com) y Google APIs.
+  * connect-src permite Supabase WebSocket (wss://*.supabase.co) y endpoints HTTPS de Supabase.
+  * frame-src permite challenges.cloudflare.com.
+- Variables Públicas en Cliente (Configuración no sensible):
+  * VITE_SUPABASE_URL = https://lfmavupbxfkxuzncfzzs.supabase.co
+  * VITE_SUPABASE_PUBLISHABLE_KEY = sb_publishable_M84R1OrB_UAz9qVvbVNciQ_YYwyG-iG
+  * VITE_TURNSTILE_SITE_KEY = 0x4AAAAAAFOjgftMybjD3w5c
+
+
+================================================================================
+23. TABLA FORENSE DE PROBLEMAS, BLOQUEOS Y PENDIENTES (P0 - P3)
+================================================================================
+
+PRIORIDAD | PROBLEMA / ITEM              | ESTADO     | IMPACTO | ÁREA           | RECOMENDACIÓN TÉCNICA
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P0        | Migración 13 y 14 en Remoto  | PENDIENTE  | ALTO    | Supabase DB    | Copiar supabase/PHASE_FINAL_MIGRATION_DEPLOY.sql
+          | (Error 42501 en SELECT anon) | (Remoto)   |         | PostgreSQL     | y ejecutar RUN en el SQL Editor del proyecto.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P0        | Turnstile Bot Protection     | PENDIENTE  | ALTO    | Supabase Auth  | Activar Bot Protection en Dashboard Supabase
+          | Server-Side en GoTrue        | (Remoto)   |         | GoTrue Gateway | con la Secret Key de Cloudflare Turnstile.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P1        | Turnstile Frontend Lifecycle | RESUELTO   | NINGUNO | Componente UI  | Máquina de estados estable y fail-closed
+          | (Ciclo de vida y no bucles)  | VERIFICADO |         | Cloudflare     | certificada con 11 tests en Vitest.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P1        | Generador CSPRNG 1..N        | RESUELTO   | NINGUNO | Draw Engine    | generate_draw_permutation(total, 1) probado
+          | (Sin sesgo de época / ceros) | VERIFICADO |         | PostgreSQL     | localmente en Vitest y Playwright.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P2        | ACL de schema private        | RESUELTO   | NINGUNO | DB Migrations  | SCHEMA -> USAGE; FUNCTIONS -> EXECUTE;
+          | (Mínimo privilegio estricto) | VERIFICADO |         | PostgreSQL     | wrappers públicos como SECURITY DEFINER.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P2        | Motor de Ganadores (P2-03)   | RESUELTO   | NINGUNO | Winner Engine  | claim_bingo_authoritative con FOR UPDATE
+          | (claim_bingo_authoritative)  | VERIFICADO |         | PostgreSQL     | e idempotencia matemática garantizada.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+P3        | Reconciliación F5 en Sorteos | RESUELTO   | NINGUNO | Frontend SPA   | recoverActiveDrawFromDB() en App.tsx
+          | (Persistencia al refrescar)  | VERIFICADO |         | React State    | probado exitosamente con Playwright E2E.
+----------+------------------------------+------------+---------+----------------+---------------------------------------------
+MEJORAS   | Sofisticación Visual UI/UX   | PENDIENTE  | MEDIO   | Frontend UI    | Rediseño estético y de componentes según
+VISUALES  | (Atmósfera de salón de lujo) | POR HACER  |         | CSS / Tailwind | las directrices de este documento.
+
+
+================================================================================
+24. REGLAS DE ORO PARA EL REDISEÑO VISUAL DE BINGO CLUB VNZLA
+================================================================================
+Cualquier diseñador, programador o agente de IA que trabaje en el rediseño debe
+adherirse estrictamente a las siguientes 20 REGLAS DE ORO:
+
+1.  Mejorar la interfaz visual (UI) sin alterar jamás la lógica de negocio subyacente.
+2.  No modificar los contratos de las APIs ni los payloads JSON existentes.
+3.  No alterar los nombres de las tablas de PostgreSQL ni sus columnas.
+4.  No modificar los procedimientos almacenados (RPC) existentes sin autorización explícita.
+5.  No alterar las reglas matemáticas ni la cantidad de balotas de las 5 modalidades de bingo.
+6.  No alterar el principio de autoridad servidor-cliente (Server Authoritative).
+7.  No introducir datos simulados, mocks falsos ni números generados localmente.
+8.  No remover ni debilitar controles de seguridad, validaciones o verificaciones anti-bot.
+9.  No eliminar ninguna prueba automatizada en tests/ o e2e/.
+10. Ejecutar la suite de pruebas completa (npm run test y npm run typecheck) tras cada cambio.
+11. Comparar el comportamiento funcional antes y después de cada intervención estética.
+12. Garantizar que todos los elementos rediseñados sean plenamente responsivos en smartphones.
+13. Mantener y respetar los estándares de accesibilidad web (contraste, etiquetas aria).
+14. Preservar la navegación por teclado y el foco en modales y formularios.
+15. Mantener los indicadores visuales de estado de carga (loaders), error y confirmación.
+16. Preservar intacta la suscripción WebSocket a Supabase Realtime y los nombres de eventos.
+17. Preservar la capacidad de reconstrucción de sala ante recargas de página (F5).
+18. Preservar el flujo de autenticación, recuperación de contraseña y enrolamiento MFA.
+19. Preservar los permisos y restricciones de acceso para cada uno de los 5 roles RBAC.
+20. Jamás declarar un estado "PASS" o "CERTIFICADO" sin evidencia técnica empírica comprobable.
+
+
+================================================================================
+25. DECLARACIÓN DE CONFIDENCIALIDAD Y ESCANEO DE SECRETOS
+================================================================================
+En estricto cumplimiento con las normas de seguridad de aplicaciones y el principio
+de no divulgación de credenciales maestras:
+
+- Supabase Service Role Key: [REDACTED — SECRET OMITIDO]
+- Cloudflare Turnstile Secret Key: [REDACTED — SECRET OMITIDO]
+- Tokens de sesión JWT de usuarios: [REDACTED — SECRET OMITIDO]
+- Claves privadas de base de datos / TLS: [REDACTED — SECRET OMITIDO]
+- Datos financieros reales de usuarios: [REDACTED — INEXISTENTES EN FASE 1]
+
+Las únicas claves registradas en este documento corresponden a las credenciales
+públicas de cliente para navegador (Publishable Anon Key y Turnstile Site Key),
+las cuales forman parte del bundle público de la aplicación web y están protegidas
+por políticas de Row Level Security (RLS) y restricciones de dominio.
+
+================================================================================
+FIN DE LAS ESPECIFICACIONES COMPLETAS DE BINGO CLUB VNZLA ONLINE
+================================================================================
