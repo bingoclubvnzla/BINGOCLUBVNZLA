@@ -116,7 +116,7 @@ INSERT INTO public.app_settings (key, value, description, is_public) VALUES
 ),
 (
     'contact_info',
-    '{"support_email": "soporte@bingoclubvnzla.com", "official_domain": "bingoclubvnzla.com", "status_portal": "https://status.bingoclubvnzla.com"}'::jsonb,
+    '{"support_email": "soporte@bingoclubvnzla.com", "official_domain": "bingoclubvnzla.vercel.app", "status_portal": "https://bingoclubvnzla.vercel.app"}'::jsonb,
     'Canales oficiales de soporte y verificación técnica.',
     true
 )
