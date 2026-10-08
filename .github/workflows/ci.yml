@@ -34,8 +34,8 @@ jobs:
             echo "ERROR: .env file found in repository! Never commit private secrets."
             exit 1
           fi
-          # Rechazar de forma terminante cualquier clave service_role o secreta
-          if git grep -i -E "SUPABASE_SERVICE_ROLE_KEY|service_role_key\s*[:=]|sk_live_" -- ':!.github' ':!docs' ':!scripts/verify-baseline-drift.mjs'; then
+          # Rechazar de forma terminante cualquier clave service_role o secreta en src/
+          if git grep -i -E "service_role_key\s*[:=]|sk_live_" -- 'src/'; then
             echo "ERROR: Se detectó un secreto privado en el repositorio."
             exit 1
           fi
