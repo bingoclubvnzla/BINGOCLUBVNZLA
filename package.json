@@ -14,7 +14,8 @@
     "test:security": "vitest run tests/security_baseline_regression_guard.test.ts",
     "test:e2e": "playwright test",
     "verify:drift": "node scripts/verify-baseline-drift.mjs",
-    "verify:post-deploy": "node scripts/verify-post-deploy.mjs"
+    "verify:post-deploy": "node scripts/verify-post-deploy.mjs",
+    "deploy:github": "node scripts/github-api-sync.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
