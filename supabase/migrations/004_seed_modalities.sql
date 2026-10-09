@@ -1,7 +1,9 @@
 -- ============================================================================
--- MIGRACIÓN 004 — DEFENSIVA (SEED SOLO SI LA TABLA ESTÁ VACÍA)
--- Alineada con el esquema real: id, name, description, grid_rows, grid_cols,
--- has_free_center, total_balls, config, is_active.
+-- MIGRACIÓN 004 — SEED DEFENSIVO DE MODALIDADES
+-- Alineada con el esquema real:
+--   id, name, description, grid_rows, grid_cols, has_free_center,
+--   total_balls, config, is_active
+-- Se ejecuta solo si la tabla está vacía. Idempotente.
 -- ============================================================================
 
 DO $$
