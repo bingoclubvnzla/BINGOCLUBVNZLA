@@ -397,3 +397,39 @@ export function hasAdminAccess(role: AppRole | null | undefined): boolean {
   return typeof level === 'number' && level >= ROLE_HIERARCHY.ADMIN;
 }
 
+// =====================================================================
+// HELPERS DE COMPATIBILIDAD PARA TESTS
+// =====================================================================
+
+export function formatPublicId(input: string | null | undefined): string {
+  if (input === null || input === undefined || input === '') {
+    return 'BCV-000000';
+  }
+  let digits = String(input).trim().toUpperCase().replace(/^BCV-/, '');
+  digits = digits.replace(/\D/g, '');
+  if (digits.length === 0) {
+    return 'BCV-000000';
+  }
+  digits = digits.padStart(6, '0').slice(-6);
+  return `BCV-${digits}`;
+}
+
+export function sanitizeText(input: string | null | undefined): string {
+  if (!input) return '';
+  return String(input)
+    .replace(/<[^>]*>/g, '')
+    .replace(/[<>()\[\]{}"'`;]/g, '')
+    .trim();
+}
+
+export function hasOperatorAccess(role: AppRole | null | undefined): boolean {
+  if (!role) return false;
+  const level = ROLE_HIERARCHY[role];
+  return typeof level === 'number' && level >= ROLE_HIERARCHY.OPERATOR;
+}
+
+export function hasAdminAccess(role: AppRole | null | undefined): boolean {
+  if (!role) return false;
+  const level = ROLE_HIERARCHY[role];
+  return typeof level === 'number' && level >= ROLE_HIERARCHY.ADMIN;
+}
