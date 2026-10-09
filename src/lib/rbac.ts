@@ -19,8 +19,65 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   SUPER_ADMIN: 'Super Administrador',
 };
 
-export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): boolean {
-  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+export function hasMinimumRole(userRole?: UserRole | null, requiredRole?: UserRole): boolean {
+  if (!userRole || !requiredRole) return false;
+  return (ROLE_HIERARCHY[userRole] ?? 0) >= (ROLE_HIERARCHY[requiredRole] ?? 0);
+}
+
+export function isStaffRole(userRole?: UserRole | null): boolean {
+  return hasMinimumRole(userRole, 'OPERATOR');
+}
+
+export function isAdminRole(userRole?: UserRole | null): boolean {
+  return hasMinimumRole(userRole, 'ADMIN');
+}
+
+export function canRoleManageTarget(
+  actorRole: UserRole,
+  targetRole: UserRole,
+  isSelf: boolean
+): boolean {
+  if (isSelf) return false; // Self-escalation prohibited
+  if (actorRole === 'SUPER_ADMIN') return true;
+  if (actorRole === 'ADMIN') {
+    return targetRole !== 'ADMIN' && targetRole !== 'SUPER_ADMIN';
+  }
+  return false;
+}
+
+export const ROLE_PERMISSION_MATRIX: Record<UserRole, string[]> = {
+  PLAYER: ['VIEW_DRAWS', 'PURCHASE_CARDS', 'VIEW_OWN_PROFILE'],
+  OPERATOR: ['VIEW_DRAWS', 'PURCHASE_CARDS', 'VIEW_OWN_PROFILE', 'OPERATE_ROOM_PAUSE', 'CALL_BALLS'],
+  SUPERVISOR: ['VIEW_DRAWS', 'PURCHASE_CARDS', 'VIEW_OWN_PROFILE', 'OPERATE_ROOM_PAUSE', 'CALL_BALLS', 'VIEW_AUDIT_LOGS'],
+  ADMIN: [
+    'VIEW_DRAWS',
+    'PURCHASE_CARDS',
+    'VIEW_OWN_PROFILE',
+    'OPERATE_ROOM_PAUSE',
+    'CALL_BALLS',
+    'VIEW_AUDIT_LOGS',
+    'MANAGE_MODALITIES',
+    'CREATE_SCHEDULED_DRAWS',
+    'VIEW_ALL_USERS',
+  ],
+  SUPER_ADMIN: [
+    'VIEW_DRAWS',
+    'PURCHASE_CARDS',
+    'VIEW_OWN_PROFILE',
+    'OPERATE_ROOM_PAUSE',
+    'CALL_BALLS',
+    'VIEW_AUDIT_LOGS',
+    'MANAGE_MODALITIES',
+    'CREATE_SCHEDULED_DRAWS',
+    'VIEW_ALL_USERS',
+    'ASSIGN_ADMIN_ROLE',
+    'PURGE_AUDIT_LOGS',
+  ],
+};
+
+export function hasPermission(role: UserRole, permission: string): boolean {
+  const perms = ROLE_PERMISSION_MATRIX[role];
+  return perms ? perms.includes(permission) : false;
 }
 
 export function isOperator(userRole: UserRole): boolean {

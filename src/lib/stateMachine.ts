@@ -49,16 +49,39 @@ export function isDrawMutable(status: DrawStatus): boolean {
   return status !== 'FINISHED' && status !== 'ARCHIVED' && status !== 'CANCELLED';
 }
 
-export function getDrawStatusLabel(status: DrawStatus): string {
-  const labels: Record<DrawStatus, string> = {
-    DRAFT: 'Borrador',
-    SCHEDULED: 'Programado',
-    READY: 'Listo para Iniciar',
-    ACTIVE: 'En Juego (En Vivo)',
-    PAUSED: 'Pausado',
-    FINISHED: 'Finalizado',
-    CANCELLED: 'Cancelado',
-    ARCHIVED: 'Archivado',
-  };
-  return labels[status] || status;
+export const DRAW_STATE_MACHINE: Record<string, string[]> = {
+  DRAFT: ['SCHEDULED', 'CANCELLED'],
+  SCHEDULED: ['READY', 'PAUSED', 'CANCELLED'],
+  READY: ['ACTIVE', 'PAUSED', 'CANCELLED'],
+  ACTIVE: ['PAUSED', 'FINISHED', 'CANCELLED'],
+  PAUSED: ['ACTIVE', 'CANCELLED'],
+  FINISHED: ['ARCHIVED'],
+  CANCELLED: ['ARCHIVED'],
+  ARCHIVED: [],
+};
+
+export const CARD_STATE_MACHINE: Record<string, string[]> = {
+  AVAILABLE: ['RESERVED', 'VOID'],
+  RESERVED: ['ACTIVE', 'ASSIGNED', 'VOID'],
+  ASSIGNED: ['ACTIVE', 'VOID'],
+  ACTIVE: ['WINNER', 'PLAYED', 'VOID'],
+  WINNER: [],
+  PLAYED: [],
+  VOID: [],
+};
+
+export function isValidDrawTransition(current: string, next: string): boolean {
+  if (current === next) return true;
+  const allowed = DRAW_STATE_MACHINE[current] || [];
+  return allowed.includes(next);
+}
+
+export function getNextPossibleDrawStates(status: string): string[] {
+  return DRAW_STATE_MACHINE[status] || [];
+}
+
+export function isValidCardTransition(current: string, next: string): boolean {
+  if (current === next) return true;
+  const allowed = CARD_STATE_MACHINE[current] || [];
+  return allowed.includes(next);
 }

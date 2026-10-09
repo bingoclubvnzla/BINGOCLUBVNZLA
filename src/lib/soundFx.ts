@@ -134,3 +134,5 @@ export function playWinnerFanfare(): void {
     });
   } catch {}
 }
+
+export const playWinSound = playWinnerFanfare;

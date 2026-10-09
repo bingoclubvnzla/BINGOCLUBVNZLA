@@ -75,6 +75,7 @@ export interface AuthContextType {
     maybePhone?: string
   ) => Promise<{ success: boolean; error?: string | null; message?: string }>;
   setActiveRolePreview: (role: UserRole | null) => void;
+  switchRolePreview: (role: UserRole | null) => void;
   error: string | null;
   clearError: () => void;
 
@@ -717,6 +718,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
 
         setActiveRolePreview: setActiveTestRole,
+        switchRolePreview: setActiveTestRole,
         error: authError,
         clearError: () => setAuthError(null),
       }}

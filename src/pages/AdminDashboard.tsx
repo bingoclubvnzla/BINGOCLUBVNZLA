@@ -75,7 +75,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
-        .eq('user_id', targetUserId);
+        .eq('id', targetUserId);
 
       if (error) {
         setFeedback(`Error al actualizar rol: ${error.message}`);
@@ -300,8 +300,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                           <td className="p-3 text-right">
                             <select
                               value={u.role}
-                              onChange={(e) => handleUpdateRole(u.user_id, e.target.value as UserRole)}
-                              disabled={u.user_id === user?.id && role !== 'SUPER_ADMIN'}
+                              onChange={(e) => handleUpdateRole(u.id, e.target.value as UserRole)}
+                              disabled={u.id === user?.id && role !== 'SUPER_ADMIN'}
                               className="px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-200 text-xs focus:outline-none focus:border-amber-400"
                             >
                               <option value="PLAYER">PLAYER</option>

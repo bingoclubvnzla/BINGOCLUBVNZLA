@@ -37,12 +37,12 @@ export interface Profile {
   public_id?: string; // Formato BCV-XXXXXX
   public_code?: string; // Alias de compatibilidad
   display_name: string;
-  full_name: string | null;
-  phone: string | null;
-  avatar_url: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  avatar_url?: string | null;
   status: UserStatus;
   role: UserRole;
-  security_level: number;
+  security_level?: number;
   metadata?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -53,19 +53,22 @@ export type UserProfile = Profile;
 
 export interface GameModality {
   id: string;
-  code: ModalityCode;
+  code?: ModalityCode;
   name: string;
   grid_rows: number;
   grid_cols: number;
   has_free_center: boolean;
   free_center?: boolean;
-  total_numbers: number;
+  total_numbers?: number;
   number_min?: number;
   number_max?: number;
   description: string | null;
   is_active: boolean;
   config?: Record<string, unknown>;
   total_balls?: number;
+  max_ball_number?: number;
+  card_numbers_count?: number;
+  pattern_rules?: { patterns: string[] } | string[] | Record<string, unknown>;
   created_at?: string;
 }
 
@@ -114,9 +117,14 @@ export interface Card {
   owner_id?: string | null;
   card_number: number;
   serial_number?: string;
+  card_serial?: string;
   status: CardStatus;
-  matrix: (number | string)[][];
-  checksum: string;
+  matrix?: (number | string)[][];
+  grid_layout?: (number | string | null)[][];
+  checksum?: string;
+  integrity_hash?: string;
+  modality_id?: string;
+  price?: number;
   purchased_at: string | null;
   created_at: string;
 }
