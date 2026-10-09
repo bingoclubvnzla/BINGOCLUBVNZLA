@@ -1,34 +1,42 @@
+import type { ModalityCode } from '../types/database';
+
 export interface ModalityItem {
   id: string;
-  code: string;
+  code: ModalityCode;
   name: string;
+  subtitle: string;
   description: string;
   grid_type: string;
   grid_rows?: number;
   grid_cols?: number;
   free_center: boolean;
+  has_free_center: boolean;
   ball_range_min: number;
   ball_range_max: number;
   total_numbers: number;
   total_balls?: number;
+  total_elements: number;
   is_active: boolean;
   rules_summary: string;
 }
 
-export const OFFICIAL_MODALITIES: Record<string, ModalityItem> = {
+export const OFFICIAL_MODALITIES: Record<ModalityCode, ModalityItem> = {
   BINGO_75: {
     id: 'BINGO_75',
     code: 'BINGO_75',
     name: 'Bingo Tradicional 75 Bolas',
+    subtitle: '75 Bolas · Formato Americano Clásico',
     description: 'El clásico formato americano en cuadrícula 5x5 con casilla central LIBRE (FREE). 75 balotas divididas en columnas B(1-15), I(16-30), N(31-45), G(46-60), O(61-75).',
     grid_type: '5x5',
     grid_rows: 5,
     grid_cols: 5,
     free_center: true,
+    has_free_center: true,
     ball_range_min: 1,
     ball_range_max: 75,
     total_numbers: 75,
     total_balls: 75,
+    total_elements: 75,
     is_active: true,
     rules_summary: 'Gana por línea horizontal, vertical, diagonal, cuatro esquinas o cartón lleno (Bingo).',
   },
@@ -36,15 +44,18 @@ export const OFFICIAL_MODALITIES: Record<string, ModalityItem> = {
     id: 'BINGO_90',
     code: 'BINGO_90',
     name: 'Bingo 90 Bolas Europeo',
+    subtitle: '90 Bolas · Formato Español Clásico 3x5',
     description: 'Formato clásico de 90 balotas. Cartones estructurados en 3 filas y 9 columnas, con exactamente 5 números por fila (15 números por cartón).',
     grid_type: '3x5',
     grid_rows: 3,
     grid_cols: 5,
     free_center: false,
+    has_free_center: false,
     ball_range_min: 1,
     ball_range_max: 90,
     total_numbers: 90,
     total_balls: 90,
+    total_elements: 90,
     is_active: true,
     rules_summary: 'Premios por 1 Línea completa (5 aciertos), 2 Líneas (10 aciertos) y Bingo (15 aciertos).',
   },
@@ -52,15 +63,18 @@ export const OFFICIAL_MODALITIES: Record<string, ModalityItem> = {
     id: 'ANIMALITOS',
     code: 'ANIMALITOS',
     name: 'Bingo Animalitos Vnzla',
+    subtitle: '38 Figuras Criollas Tradicionales',
     description: 'Modalidad tradicional inspirada en la emblemática ruleta criolla de los animalitos. Cuadrícula 5x5 con centro libre y 38 figuras venezolanas.',
     grid_type: '5x5',
     grid_rows: 5,
     grid_cols: 5,
     free_center: true,
+    has_free_center: true,
     ball_range_min: 1,
     ball_range_max: 38,
     total_numbers: 38,
     total_balls: 38,
+    total_elements: 38,
     is_active: true,
     rules_summary: '38 figuras clásicas (Delfín, Ballena, Carnero, León, etc.) en matriz 5x5 con centro libre.',
   },
@@ -68,15 +82,18 @@ export const OFFICIAL_MODALITIES: Record<string, ModalityItem> = {
     id: 'OBJETOS',
     code: 'OBJETOS',
     name: 'Bingo de Objetos e Iconos',
+    subtitle: '50 Iconos y Símbolos Tradicionales',
     description: 'Modalidad visual rápida de cuadrícula 5x5 con centro libre, diseñada para identificación instantánea mediante iconos populares.',
     grid_type: '5x5',
     grid_rows: 5,
     grid_cols: 5,
     free_center: true,
+    has_free_center: true,
     ball_range_min: 1,
     ball_range_max: 50,
     total_numbers: 50,
     total_balls: 50,
+    total_elements: 50,
     is_active: true,
     rules_summary: '50 elementos cotidianos en matriz 5x5 con casilla libre.',
   },
@@ -84,15 +101,18 @@ export const OFFICIAL_MODALITIES: Record<string, ModalityItem> = {
     id: 'CHAPITAS',
     code: 'CHAPITAS',
     name: 'Bingo Chapitas Criollas',
+    subtitle: '60 Chapitas · Formato Rápido 3x5',
     description: 'Modalidad criolla venezolana compacta de 3 filas por 5 números (3x5) inspirada en las chapitas tradicionales. Sorteos ágiles optimizados para móviles.',
     grid_type: '3x5',
     grid_rows: 3,
     grid_cols: 5,
     free_center: false,
+    has_free_center: false,
     ball_range_min: 1,
     ball_range_max: 60,
     total_numbers: 60,
     total_balls: 60,
+    total_elements: 60,
     is_active: true,
     rules_summary: '15 números por cartón en formato 3x5 de alta velocidad.',
   },
@@ -138,3 +158,14 @@ export const ANIMALITOS_LIST = [
   { id: 36, name: 'Culebra', emoji: '🐍' },
   { id: 37, name: 'Ballena', emoji: '🐋' },
 ];
+
+export const VENEZUELAN_ANIMALITOS_ROSTER = ANIMALITOS_LIST;
+
+export const VENEZUELAN_OBJETOS_ROSTER = [
+  'Cuatro', 'Maracas', 'Arpa', 'Papagayo', 'Arepa',
+  'Pabellón', 'Chinchorro', 'Sombrero', 'Alpargatas', 'Tinaja',
+  'Pilón', 'Molinillo', 'Budare', 'Trompo', 'Metras',
+  'Perinola', 'Gurrufío', 'Ávila', 'Salto Ángel', 'Orquídea',
+  'Turpial', 'Araguaney', 'Encava', 'Por Puesto'
+];
+

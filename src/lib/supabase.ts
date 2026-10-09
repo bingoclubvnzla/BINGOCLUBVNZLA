@@ -66,6 +66,13 @@ export const isSupabaseConfigured = Boolean(
 export const supabaseUrl = isSupabaseConfigured ? rawUrl : '';
 export const supabaseAnonKey = isSupabaseConfigured ? rawAnonKey : '';
 
+export function getSupabaseConfigStatus() {
+  return {
+    configured: isSupabaseConfigured,
+    url: supabaseUrl,
+  };
+}
+
 // Inicializar cliente oficial de Supabase
 export const supabase: SupabaseClient = createClient(
   isSupabaseConfigured ? rawUrl : 'https://unconfigured.supabase.co',
