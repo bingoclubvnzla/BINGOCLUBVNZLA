@@ -60,12 +60,11 @@ export function generateIdempotencyKey(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  // Fallback seguro mediante CSPRNG (sin Math.random)
   const bytes = new Uint8Array(16);
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(bytes);
   }
-  bytes[6] = (bytes[6] & 0x0f) | 0x40; // RFC 4122 v4
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
@@ -73,7 +72,6 @@ export function generateIdempotencyKey(): string {
 
 /**
  * Cálculo determinista de Hash SHA-256 en formato hexadecimal (64 caracteres)
- * Cumple con la especificación de integridad forense y encadenamiento criptográfico.
  */
 export function sha256Hex(message: string): string {
   const K = [
@@ -179,7 +177,6 @@ export function sha256Hex(message: string): string {
 
 /**
  * Generador de Identificador Público estilo BCV-XXXXXX
- * (Nota: En producción lo genera la BD mediante trigger; esto se usa para validación de formato y pruebas)
  */
 export function isValidPublicId(publicId: string): boolean {
   const bcvRegex = /^BCV-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/;
@@ -216,7 +213,6 @@ export function validateVenezuelanPhone(phone: string): PhoneValidationResult {
 
 /**
  * Máquina de estados finita de Sorteos (Draws)
- * Valida transiciones permitidas según el documento de arquitectura
  */
 export const ALLOWED_DRAW_TRANSITIONS: Record<DrawStatus, DrawStatus[]> = {
   DRAFT: ['SCHEDULED', 'CANCELLED'],
@@ -242,7 +238,7 @@ export const isValidDrawTransition = canTransitionDrawStatus;
  */
 export interface PasswordValidationResult {
   isValid: boolean;
-  score: number; // 0 a 4
+  score: number;
   errors: string[];
 }
 
@@ -288,7 +284,6 @@ export function formatSafeErrorMessage(error: unknown): string {
 
 /**
  * Enmascara direcciones de correo para vistas públicas
- * Ej: usuario123@gmail.com -> u***3@gmail.com
  */
 export function maskEmail(email: string): string {
   if (!email || !email.includes('@')) return '******';
@@ -298,16 +293,10 @@ export function maskEmail(email: string): string {
 }
 
 /**
- * Tipos de entornos operativos para Bingo Club VNZLA
+ * Tipos de entornos operativos
  */
 export type AppEnvironment = 'LOCAL' | 'PREVIEW' | 'PRODUCTION';
 
-/**
- * Detecta el entorno de ejecución actual de forma determinista y segura.
- * - LOCAL: localhost, 127.0.0.1, *.localhost
- * - PREVIEW: subdominios de staging/preview en cloud run (*.run.app)
- * - PRODUCTION: dominio oficial bingoclubvnzla.vercel.app o cualquier entorno productivo
- */
 export function getAppEnvironment(): AppEnvironment {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname.toLowerCase();
@@ -332,25 +321,18 @@ export function getAppEnvironment(): AppEnvironment {
   return 'LOCAL';
 }
 
-/**
- * Determina si la protección anti-bot Cloudflare Turnstile es obligatoria (Fail-Closed).
- * En PRODUCTION y PREVIEW, la autenticación DEBE fallar de forma segura si Turnstile no está activo.
- * En LOCAL, se permite el fallback transparente para desarrollo.
- */
 export function isTurnstileRequired(env: AppEnvironment = getAppEnvironment()): boolean {
   return env === 'PRODUCTION' || env === 'PREVIEW';
 }
 
 // =====================================================================
-// HELPERS ADICIONALES (compatibilidad con tests de RBAC y auth)
+// HELPERS DE COMPATIBILIDAD CON TESTS (RBAC Y AUTH)
 // =====================================================================
 
 /**
  * Normaliza un identificador público al formato canónico BCV-XXXXXX.
- * - Acepta entradas con o sin prefijo BCV- (case-insensitive).
- * - Fuerza mayúsculas y rellena con ceros a la izquierda.
- * - Devuelve BCV-000000 para entradas nulas, vacías o sin dígitos.
- * - Nunca expone emails, UUIDs ni datos personales.
+ * Acepta entradas con o sin prefijo BCV- (case-insensitive).
+ * Devuelve BCV-000000 para entradas nulas, vacías o sin dígitos.
  */
 export function formatPublicId(input: string | null | undefined): string {
   if (input === null || input === undefined || input === '') {
@@ -367,7 +349,6 @@ export function formatPublicId(input: string | null | undefined): string {
 
 /**
  * Sanitiza texto libre eliminando etiquetas HTML y caracteres peligrosos.
- * Conserva letras, números, espacios y caracteres seguros.
  */
 export function sanitizeText(input: string | null | undefined): string {
   if (!input) return '';
@@ -379,7 +360,6 @@ export function sanitizeText(input: string | null | undefined): string {
 
 /**
  * Determina si un rol tiene privilegios de OPERATOR o superiores.
- * Acepta null/undefined y retorna false en esos casos.
  */
 export function hasOperatorAccess(role: AppRole | null | undefined): boolean {
   if (!role) return false;
@@ -389,45 +369,7 @@ export function hasOperatorAccess(role: AppRole | null | undefined): boolean {
 
 /**
  * Determina si un rol tiene privilegios administrativos (ADMIN o SUPER_ADMIN).
- * Acepta null/undefined y retorna false en esos casos.
  */
-export function hasAdminAccess(role: AppRole | null | undefined): boolean {
-  if (!role) return false;
-  const level = ROLE_HIERARCHY[role];
-  return typeof level === 'number' && level >= ROLE_HIERARCHY.ADMIN;
-}
-
-// =====================================================================
-// HELPERS DE COMPATIBILIDAD PARA TESTS
-// =====================================================================
-
-export function formatPublicId(input: string | null | undefined): string {
-  if (input === null || input === undefined || input === '') {
-    return 'BCV-000000';
-  }
-  let digits = String(input).trim().toUpperCase().replace(/^BCV-/, '');
-  digits = digits.replace(/\D/g, '');
-  if (digits.length === 0) {
-    return 'BCV-000000';
-  }
-  digits = digits.padStart(6, '0').slice(-6);
-  return `BCV-${digits}`;
-}
-
-export function sanitizeText(input: string | null | undefined): string {
-  if (!input) return '';
-  return String(input)
-    .replace(/<[^>]*>/g, '')
-    .replace(/[<>()\[\]{}"'`;]/g, '')
-    .trim();
-}
-
-export function hasOperatorAccess(role: AppRole | null | undefined): boolean {
-  if (!role) return false;
-  const level = ROLE_HIERARCHY[role];
-  return typeof level === 'number' && level >= ROLE_HIERARCHY.OPERATOR;
-}
-
 export function hasAdminAccess(role: AppRole | null | undefined): boolean {
   if (!role) return false;
   const level = ROLE_HIERARCHY[role];
