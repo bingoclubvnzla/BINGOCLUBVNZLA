@@ -1,0 +1,8 @@
+-- ============================================================================
+-- MIGRACIÓN 003 (DEFENSIVA / NO-OP)
+-- Los triggers y funciones canónicas fueron creadas por:
+--   20260101000003_audit_and_triggers.sql
+--   20261005000003_draw_engine.sql
+--   20261005000006_auth_hardening.sql
+-- ============================================================================
+-- No se recrean aquí para no romper las firmas de producción.
