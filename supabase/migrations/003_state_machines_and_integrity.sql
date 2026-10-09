@@ -51,7 +51,7 @@ BEGIN
     END IF;
 
     -- Obtener rol del invocador
-    SELECT role INTO v_caller_role FROM public.profiles WHERE user_id = auth.uid();
+    SELECT role INTO v_caller_role FROM public.profiles WHERE id = auth.uid();
     
     -- Solo ADMIN o SUPER_ADMIN pueden alterar role, status o security_level
     IF v_caller_role NOT IN ('ADMIN', 'SUPER_ADMIN') THEN
@@ -170,7 +170,7 @@ BEGIN
 
     -- Insertar perfil
     INSERT INTO public.profiles (
-        user_id,
+        id,
         public_id,
         display_name,
         full_name,

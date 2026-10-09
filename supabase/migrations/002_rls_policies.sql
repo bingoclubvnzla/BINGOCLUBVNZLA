@@ -39,7 +39,7 @@ DECLARE
 BEGIN
     SELECT role INTO v_role
     FROM public.profiles
-    WHERE user_id = auth.uid()
+    WHERE id = auth.uid()
     LIMIT 1;
     
     RETURN COALESCE(v_role, 'PLAYER'::user_role_type);
@@ -73,12 +73,14 @@ $$;
 -- ============================================================================
 
 -- Cualquier usuario autenticado puede leer su propio perfil
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
 CREATE POLICY "profiles_select_own"
 ON public.profiles FOR SELECT
 TO authenticated
-USING (user_id = auth.uid());
+USING (id = auth.uid());
 
 -- Operadores y administradores pueden consultar perfiles de jugadores para soporte y verificación
+DROP POLICY IF EXISTS "profiles_select_operators" ON public.profiles;
 CREATE POLICY "profiles_select_operators"
 ON public.profiles FOR SELECT
 TO authenticated
@@ -86,13 +88,15 @@ USING (is_operator_or_above());
 
 -- El usuario solo puede actualizar sus propios datos permitidos (display_name, phone, avatar_url)
 -- La columna role, status y security_level están protegidas por trigger
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 CREATE POLICY "profiles_update_own"
 ON public.profiles FOR UPDATE
 TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
+USING (id = auth.uid())
+WITH CHECK (id = auth.uid());
 
 -- Administradores pueden actualizar perfiles (incluyendo roles y estados)
+DROP POLICY IF EXISTS "profiles_admin_update" ON public.profiles;
 CREATE POLICY "profiles_admin_update"
 ON public.profiles FOR UPDATE
 TO authenticated

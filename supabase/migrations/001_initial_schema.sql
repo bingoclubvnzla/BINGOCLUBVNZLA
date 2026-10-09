@@ -73,8 +73,7 @@ CREATE TYPE tx_status_type AS ENUM (
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     public_id VARCHAR(16) NOT NULL UNIQUE, -- Identificador público no sensible: BCV-XXXXXX
     display_name VARCHAR(50) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
@@ -90,9 +89,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     CONSTRAINT chk_public_id_format CHECK (public_id ~ '^BCV-[A-Z0-9]{6}$')
 );
 
-CREATE INDEX idx_profiles_user_id ON public.profiles(user_id);
-CREATE INDEX idx_profiles_public_id ON public.profiles(public_id);
-CREATE INDEX idx_profiles_role ON public.profiles(role);
+-- NOTA FORENSE: 'id' es PRIMARY KEY (1:1 con auth.users(id)).
+-- El índice 'idx_profiles_user_id' era incompatible con el esquema real y redundante con profiles_pkey.
+CREATE INDEX IF NOT EXISTS idx_profiles_public_id ON public.profiles(public_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 
 -- ============================================================================
 -- 3. PERMISOS RBAC Y MATRIZ
@@ -184,8 +184,8 @@ CREATE TABLE IF NOT EXISTS public.draws (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
-CREATE INDEX idx_draws_status ON public.draws(status);
-CREATE INDEX idx_draws_scheduled_at ON public.draws(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_draws_status ON public.draws(status);
+CREATE INDEX IF NOT EXISTS idx_draws_scheduled_at ON public.draws(scheduled_at);
 
 -- Eventos de Sorteo (Extracción de cada balota/número)
 CREATE TABLE IF NOT EXISTS public.draw_events (
@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS public.draw_events (
     CONSTRAINT uq_draw_extracted_value UNIQUE (draw_id, extracted_value)
 );
 
-CREATE INDEX idx_draw_events_draw_id ON public.draw_events(draw_id);
+CREATE INDEX IF NOT EXISTS idx_draw_events_draw_id ON public.draw_events(draw_id);
 
 -- ============================================================================
 -- 8. CARTONES DIGITALES (CARDS & CARD NUMBERS)
@@ -211,7 +211,7 @@ CREATE INDEX idx_draw_events_draw_id ON public.draw_events(draw_id);
 CREATE TABLE IF NOT EXISTS public.cards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     draw_id UUID NOT NULL REFERENCES public.draws(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     card_serial VARCHAR(32) NOT NULL UNIQUE,
     grid_matrix JSONB NOT NULL, -- Estructura fija 5x5 o 3x5 generada en servidor
     is_winner BOOLEAN NOT NULL DEFAULT false,
@@ -222,8 +222,8 @@ CREATE TABLE IF NOT EXISTS public.cards (
     CONSTRAINT uq_user_draw_card UNIQUE (draw_id, card_serial)
 );
 
-CREATE INDEX idx_cards_draw_id ON public.cards(draw_id);
-CREATE INDEX idx_cards_user_id ON public.cards(user_id);
+CREATE INDEX IF NOT EXISTS idx_cards_draw_id ON public.cards(draw_id);
+CREATE INDEX IF NOT EXISTS idx_cards_user_id ON public.cards(user_id);
 
 CREATE TABLE IF NOT EXISTS public.card_numbers (
     card_id UUID NOT NULL REFERENCES public.cards(id) ON DELETE CASCADE,
@@ -254,7 +254,7 @@ CREATE TABLE IF NOT EXISTS public.winners (
     draw_id UUID NOT NULL REFERENCES public.draws(id) ON DELETE CASCADE,
     prize_id UUID NOT NULL REFERENCES public.prizes(id) ON DELETE CASCADE,
     card_id UUID NOT NULL REFERENCES public.cards(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     winning_ball_sequence INTEGER NOT NULL,
     verified_by_server BOOLEAN NOT NULL DEFAULT true,
     server_verified_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -270,7 +270,7 @@ CREATE TABLE IF NOT EXISTS public.winners (
 
 CREATE TABLE IF NOT EXISTS public.wallets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE REFERENCES public.profiles(user_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL UNIQUE REFERENCES public.profiles(id) ON DELETE CASCADE,
     balance NUMERIC(14, 2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
     locked_balance NUMERIC(14, 2) NOT NULL DEFAULT 0.00 CHECK (locked_balance >= 0),
     currency VARCHAR(10) NOT NULL DEFAULT 'VES',
@@ -293,13 +293,13 @@ CREATE TABLE IF NOT EXISTS public.wallet_transactions (
     processed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_wallet_tx_wallet_id ON public.wallet_transactions(wallet_id);
-CREATE INDEX idx_wallet_tx_reference ON public.wallet_transactions(reference);
+CREATE INDEX IF NOT EXISTS idx_wallet_tx_wallet_id ON public.wallet_transactions(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_tx_reference ON public.wallet_transactions(reference);
 
 -- Solicitudes de Pago (Pago Móvil / Binance / Transferencia)
 CREATE TABLE IF NOT EXISTS public.payment_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     payment_method VARCHAR(30) NOT NULL, -- PAGO_MOVIL, BINANCE_PAY, TRANSFERENCIA
     amount NUMERIC(14, 2) NOT NULL CHECK (amount > 0),
     reference_number VARCHAR(80) NOT NULL UNIQUE,
@@ -344,6 +344,6 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
-CREATE INDEX idx_audit_logs_user_id ON public.audit_logs(user_id);
-CREATE INDEX idx_audit_logs_action ON public.audit_logs(action);
-CREATE INDEX idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON public.audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON public.audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
