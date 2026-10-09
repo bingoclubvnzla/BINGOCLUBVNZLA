@@ -24,6 +24,7 @@ import {
 import { MfaEnrollmentModal } from './mfa/MfaEnrollmentModal';
 import { StepUpAuthModal } from './mfa/StepUpAuthModal';
 import { BingoCard } from './BingoCard';
+import { PlayerWalletSection } from './finance/PlayerWalletSection';
 import { playClickSound } from '../lib/soundFx';
 import {
   Wallet,
@@ -61,7 +62,7 @@ interface PlayerDashboardProps {
 
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoom }) => {
   const { user, profile, publicId, role, signOut, updateProfileDetails, resetPassword } = useAuth();
-  const [activeTab, setActiveTab] = useState<'sorteos' | 'cartones' | 'historial' | 'perfil' | 'seguridad'>('sorteos');
+  const [activeTab, setActiveTab] = useState<'sorteos' | 'cartones' | 'monedero' | 'historial' | 'perfil' | 'seguridad'>('sorteos');
   const [copiedId, setCopiedId] = useState(false);
 
   // Formulario de edición de perfil
@@ -467,6 +468,18 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
           </button>
 
           <button
+            onClick={() => { playClickSound(); setActiveTab('monedero'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
+              activeTab === 'monedero'
+                ? 'btn-gaming-gold shine-sweep text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent font-bold'
+            }`}
+          >
+            <Wallet className="h-4 w-4" />
+            <span>Monedero Oficial</span>
+          </button>
+
+          <button
             onClick={() => { playClickSound(); setActiveTab('historial'); }}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs rounded-xl transition-all cursor-pointer ${
               activeTab === 'historial'
@@ -728,6 +741,21 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ onEnterLiveRoo
               </div>
             )}
           </div>
+        )}
+
+        {/* ==================================================================== */}
+        {/* PESTAÑA: MONEDERO OFICIAL DEL JUGADOR                                */}
+        {/* ==================================================================== */}
+        {activeTab === 'monedero' && (
+          <PlayerWalletSection
+            onRequestWithdrawalStepUp={(amt, onSuccess) => {
+              triggerStepUpAction(
+                'REQUEST_WITHDRAWAL',
+                { amount: amt },
+                onSuccess
+              );
+            }}
+          />
         )}
 
         {/* ==================================================================== */}

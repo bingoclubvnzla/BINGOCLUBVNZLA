@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFallbackModalities } from '../lib/supabase';
+import { MonetizationSection } from './finance/MonetizationSection';
 import type { DrawStatus, UserRole } from '../types/database';
 import {
   ShieldCheck,
@@ -20,7 +21,8 @@ import {
   Pause,
   StopCircle,
   Archive,
-  RefreshCw
+  RefreshCw,
+  TrendingUp
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -29,7 +31,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onEnterLiveRoom }) => {
   const { role, publicId } = useAuth();
-  const [activeModule, setActiveModule] = useState<'usuarios' | 'roles' | 'modalidades' | 'sorteos' | 'auditoria' | 'configuracion' | 'seguridad'>('sorteos');
+  const [activeModule, setActiveModule] = useState<'usuarios' | 'roles' | 'modalidades' | 'sorteos' | 'finanzas' | 'auditoria' | 'configuracion' | 'seguridad'>('sorteos');
 
   const modalities = getFallbackModalities();
 
@@ -134,6 +136,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onEnterLiveRoom 
           >
             <Dices className="h-4 w-4" />
             Sorteos ({draws.length})
+          </button>
+
+          <button
+            onClick={() => setActiveModule('finanzas')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              activeModule === 'finanzas'
+                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <TrendingUp className="h-4 w-4 text-amber-400" />
+            Finanzas & P&L
           </button>
 
           <button
@@ -333,6 +347,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onEnterLiveRoom 
               ))}
             </div>
           </div>
+        )}
+
+        {/* MÓDULO: FINANZAS & P&L DE PLATAFORMA */}
+        {activeModule === 'finanzas' && (
+          <MonetizationSection />
         )}
 
         {/* MÓDULO: MODALIDADES */}

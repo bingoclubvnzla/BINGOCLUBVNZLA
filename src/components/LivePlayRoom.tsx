@@ -13,6 +13,7 @@ import { playBallChime, isSoundMuted, toggleSound, playClickSound } from '../lib
 import { useAuth } from '../contexts/AuthContext';
 import { BingoCard } from './BingoCard';
 import { BingoClubLiveVisualizer } from './BingoClubLiveVisualizer';
+import { DrawTransparencySection } from './finance/DrawTransparencySection';
 import { WinCelebration, type WinCelebrationData } from './WinCelebration';
 import type { Card } from '../types/database';
 import { createDraw, createDrawSnapshot, type AuthoritativeDraw } from '../lib/drawEngine';
@@ -343,6 +344,20 @@ export const LivePlayRoom: React.FC<LivePlayRoomProps> = ({
             )}
           </div>
         )}
+
+        {/* SECCIÓN OFICIAL DE TRANSPARENCIA ECONÓMICA DEL SORTEO */}
+        <div className="pt-4">
+          <DrawTransparencySection
+            draw={{
+              id: snapshot.draw_id,
+              modality_id: snapshot.modality_id,
+              status: snapshot.status as any,
+              card_price: 50.0,
+              total_cards_sold: playerCards.length > 0 ? playerCards.length : 10,
+              total_cards_available: 500,
+            } as any}
+          />
+        </div>
       </div>
 
       {/* MODAL DE CELEBRACIÓN DE GANADOR (WINNER_AWARDED) */}

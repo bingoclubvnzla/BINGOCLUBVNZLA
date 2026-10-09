@@ -9,6 +9,8 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, us
 import { ShieldCheck, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, XCircle } from 'lucide-react';
 import { isTurnstileRequired } from '../lib/security';
 
+export const DEFAULT_TURNSTILE_SITE_KEY = '0x4AAAAAAFOjgftMybjD3w5c';
+
 export type TurnstileStatus =
   | 'NO_VERIFICADO'
   | 'VERIFICANDO'

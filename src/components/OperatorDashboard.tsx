@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { MonetizationSection } from './finance/MonetizationSection';
 import {
   ShieldAlert,
   Users,
@@ -16,12 +17,13 @@ import {
   CheckCircle,
   FileText,
   Search,
-  Lock
+  Lock,
+  TrendingUp
 } from 'lucide-react';
 
 export const OperatorDashboard: React.FC = () => {
   const { role, publicId } = useAuth();
-  const [activeModule, setActiveModule] = useState<'jugadores' | 'incidencias' | 'auditoria' | 'recargas' | 'pagos' | 'retiros'>('jugadores');
+  const [activeModule, setActiveModule] = useState<'jugadores' | 'incidencias' | 'auditoria' | 'monetizacion' | 'recargas' | 'pagos' | 'retiros'>('monetizacion');
 
   // Muestra de incidencias de prueba para verificar interacción de soporte
   const [incidents, setIncidents] = useState([
@@ -117,6 +119,19 @@ export const OperatorDashboard: React.FC = () => {
           >
             <FileText className="h-4 w-4" />
             Auditoría
+          </button>
+
+          {/* MÓDULO OFICIAL DE MONETIZACIÓN */}
+          <button
+            onClick={() => setActiveModule('monetizacion')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              activeModule === 'monetizacion'
+                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <TrendingUp className="h-4 w-4 text-amber-400" />
+            Monetización & Rentabilidad
           </button>
 
           {/* MÓDULOS FINANCIEROS (PREPARADOS, SIN ACTIVAR) */}
@@ -260,6 +275,11 @@ export const OperatorDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* MÓDULO OFICIAL DE MONETIZACIÓN Y RENTABILIDAD */}
+        {activeModule === 'monetizacion' && (
+          <MonetizationSection />
         )}
 
         {/* MÓDULOS FINANCIEROS INFORMATIVOS (NO MOCK DATA) */}

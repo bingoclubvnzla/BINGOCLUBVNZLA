@@ -198,6 +198,7 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
   const getBallSphereClass = (letter?: string) => {
     if (letter === 'B') return 'ball-3d-b text-white';
     if (letter === 'I') return 'ball-3d-i text-white';
+    if (letter === 'N') return 'ball-3d-n text-slate-950';
     if (letter === 'G') return 'ball-3d-g text-white';
     if (letter === 'O') return 'ball-3d-o text-white';
     if (snapshot.modality_id === 'BINGO_90') return 'ball-sphere-navy text-white';
@@ -244,16 +245,11 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
       </div>
 
       {/* ==================================================================== */}
-      {/* CAPA 2: IDENTIDAD (BINGOCLUB.PNG MARCA DE AGUA EN EL CENTRO)         */}
+      {/* CAPA 2: ATMÓSFERA Y RESPLANDOR AMBIENTAL (Z-0)                        */}
       {/* ==================================================================== */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0" aria-hidden="true">
-        {/* Halo resplandeciente detrás del emblema central */}
-        <div className="absolute w-80 sm:w-[460px] md:w-[540px] h-80 sm:h-[460px] md:h-[540px] rounded-full bg-gradient-to-tr from-amber-500/15 via-yellow-400/10 to-indigo-500/10 blur-[110px] animate-pulse" />
-        <img
-          src="/bingoclub.png"
-          alt="Bingo Club VNZLA"
-          className="w-64 sm:w-80 md:w-[480px] lg:w-[540px] max-h-[55%] object-contain opacity-25 sm:opacity-30 filter drop-shadow-[0_0_40px_rgba(245,158,11,0.25)] transition-all duration-700 hover:opacity-35"
-        />
+        {/* Halo resplandeciente suave en el fondo general */}
+        <div className="w-80 h-80 sm:w-96 sm:h-96 md:w-[480px] md:h-[480px] rounded-full bg-gradient-to-tr from-amber-500/10 via-yellow-400/10 to-indigo-600/10 blur-[100px]" />
       </div>
 
       {/* Onda de choque al cantar una nueva balota */}
@@ -430,101 +426,189 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* 2. ESCENARIO CENTRAL BROADCAST (ELEMENTO DOMINANTE)                */}
+        {/* 2. ESCENARIO CENTRAL BROADCAST (LAYOUT 3 PANELES PROFESIONAL)      */}
         {/* ------------------------------------------------------------------ */}
-        <div className="my-auto py-4 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div className="my-auto py-2 sm:py-4 flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6 relative z-10 w-full min-h-[440px] lg:min-h-[480px]">
           
-          {/* COLUMNA DOMINANTE: LA GRAN BALOTA / FIGURA DEL SORTEO */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center text-center">
-            {currentBallNum !== null && currentBallMeta ? (
-              <div className="flex flex-col items-center justify-center transition-all duration-300">
-                {/* Gran Esfera 3D Protagonista */}
-                <div
-                  className={`relative flex items-center justify-center rounded-full border-4 border-amber-200/90 shadow-2xl transition-all duration-500 ${
-                    isCinemaMode
-                      ? 'h-52 w-52 sm:h-64 sm:w-64 md:h-80 md:w-80'
-                      : 'h-44 w-44 sm:h-52 sm:w-52 md:h-60 md:w-60'
-                  } ${getBallSphereClass(currentBallMeta.letter)} ${
-                    shockwaveActive ? 'scale-110 shadow-amber-400/60 ring-8 ring-amber-300/40' : 'hover:scale-105'
-                  }`}
-                >
-                  {/* Placa Circular Blanca / Decal oficial de Lotería */}
-                  <div className="h-2/3 w-2/3 rounded-full bg-slate-950/85 backdrop-blur-xs flex flex-col items-center justify-center border-2 border-white/40 shadow-inner">
-                    {currentBallMeta.letter && (
-                      <span className="text-sm sm:text-lg md:text-xl font-mono font-black text-amber-300 leading-none mb-0.5 tracking-widest drop-shadow-xs">
-                        {currentBallMeta.letter}
-                      </span>
-                    )}
-                    <span className="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold text-white leading-none tracking-tight drop-shadow-md">
-                      {currentBallNum}
+          {/* PANEL IZQUIERDO: INFORMACIÓN DEL SORTEO & CONTROLES */}
+          <div className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col justify-between gap-3 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-slate-800/90 p-3.5 shadow-xl order-2 lg:order-1">
+            {/* Cabecera Info */}
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Radio className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                Control de Sala
+              </span>
+              <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-500/15 px-2 py-0.5 rounded border border-sky-500/30">
+                #{snapshot.public_code || snapshot.draw_id?.slice(0, 6)}
+              </span>
+            </div>
+
+            {/* Pozo Oficial */}
+            <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/15 via-yellow-500/5 to-slate-900 border border-amber-500/35 shadow-inner">
+              <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Trophy className="h-3.5 w-3.5 text-amber-400" /> Pozo Acumulado
+              </span>
+              <span className="text-lg sm:text-xl font-mono font-black text-amber-300 block mt-1 tracking-tight">
+                {jackpotDisplay}
+              </span>
+            </div>
+
+            {/* Métricas de Sorteo */}
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
+                <span className="text-[9px] text-slate-400 block uppercase">Extracciones</span>
+                <span className="text-sm font-black text-white">{snapshot.drawn_numbers.length} / {snapshot.total_balls}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
+                <span className="text-[9px] text-slate-400 block uppercase">Jugadores</span>
+                <span className="text-sm font-black text-white flex items-center gap-1">
+                  <Users className="h-3 w-3 text-sky-400" />
+                  {snapshot.players_connected}
+                </span>
+              </div>
+            </div>
+
+            {/* Última Balota Registrada */}
+            <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-mono font-bold text-slate-400 uppercase">Última Balota</span>
+                <span className="text-xs font-mono font-bold text-slate-200">
+                  {snapshot.current_ball !== null ? (
+                    <span className="text-amber-300 font-black">
+                      {currentBallMeta?.letter ? `${currentBallMeta.letter}-` : ''}{snapshot.current_ball}
                     </span>
-                  </div>
-                </div>
-
-                {/* Subtítulo / Nombre criollo y Locución */}
-                <div className="mt-4 sm:mt-5 flex flex-col items-center">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-display font-black text-white tracking-tight">
-                      {currentBallMeta.subtext || currentBallMeta.displayLabel}
-                    </h2>
-                    <button
-                      onClick={() => speakBallTTS(snapshot.modality_id, currentBallNum, true)}
-                      title="Repetir locución oficial"
-                      className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-slate-700 cursor-pointer"
-                    >
-                      <Volume2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-amber-400 mt-1">
-                    Extracción #{snapshot.drawn_numbers.length} de {snapshot.total_balls}
-                  </span>
-                </div>
+                  ) : (
+                    'En espera'
+                  )}
+                </span>
               </div>
-            ) : (
-              /* Estado en espera */
-              <div className="flex flex-col items-center justify-center my-6 text-slate-400">
-                <div className="h-40 w-40 sm:h-52 sm:w-52 rounded-full border-3 border-dashed border-amber-500/30 flex items-center justify-center bg-amber-500/5 backdrop-blur-xs animate-pulse">
-                  <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-widest text-amber-300">
-                    {snapshot.status === 'READY' ? 'Sorteo Preparado' : 'Esperando Balota'}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-3 max-w-xs leading-relaxed">
-                  El servidor emitirá la siguiente balota al iniciar la extracción oficial.
-                </p>
-              </div>
-            )}
+              {currentBallNum !== null && (
+                <button
+                  onClick={() => speakBallTTS(snapshot.modality_id, currentBallNum, true)}
+                  title="Repetir locución oficial"
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 cursor-pointer transition-colors"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
-            {/* Control opcional de operador si aplica */}
+            {/* Control opcional de operador */}
             {isOperatorOrAdmin && onOperatorEmitNext && snapshot.status === 'ACTIVE' && (
               <button
                 onClick={onOperatorEmitNext}
-                className="mt-4 px-4 py-2 rounded-xl btn-gaming-gold shine-sweep text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg cursor-pointer"
+                className="w-full py-2 px-3 rounded-xl btn-gaming-gold shine-sweep text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer"
               >
                 <Flame className="h-4 w-4" />
-                <span>Emitir Siguiente Balota (Operador)</span>
+                <span>Emitir Siguiente Balota</span>
               </button>
             )}
           </div>
 
-          {/* COLUMNA DERECHA: TABLERO VISUAL (BINGO_75 O BINGO_90) */}
-          <div className="lg:col-span-7 flex flex-col justify-between">
+          {/* PANEL CENTRAL: ELEMENTO PRINCIPAL DEL SORTEO (CÍRCULO EXACTAMENTE DEL MISMO TAMAÑO DEL LOGO Y ENCIMA DEL LOGO) */}
+          <div className="flex-1 flex flex-col items-center justify-center text-center relative z-20 order-1 lg:order-2 my-2 sm:my-0 min-w-0">
+            {/* CONTENEDOR MAESTRO CENTRAL: TAMAÑO EXACTO Y CO-LOCALIZADO */}
+            <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-[360px] lg:h-[360px] xl:w-[390px] xl:h-[390px] flex items-center justify-center transition-all duration-500">
+              
+              {/* CAPA BASE DEL ELEMENTO CENTRAL: EL LOGO OFICIAL BINGOCLUB.PNG */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+                {/* Halo dorado detrás del emblema central */}
+                <div className="absolute w-[92%] h-[92%] rounded-full bg-gradient-to-tr from-amber-500/25 via-yellow-400/20 to-indigo-600/20 blur-2xl animate-pulse" />
+                <img
+                  src="/bingoclub.png"
+                  alt="Bingo Club VNZLA"
+                  className="w-[86%] h-[86%] object-contain filter drop-shadow-[0_0_35px_rgba(245,158,11,0.5)] transition-all duration-700 select-none"
+                />
+              </div>
+
+              {currentBallNum !== null && currentBallMeta ? (
+                /* ESTADO DE BALOTA CANTADA: CÍRCULO EXACTAMENTE ENCIMA DEL LOGO Y DEL MISMO TAMAÑO */
+                <div
+                  className={`absolute inset-0 flex flex-col items-center justify-center rounded-full border-4 border-amber-300/90 shadow-2xl transition-all duration-500 z-10 ${getBallSphereClass(currentBallMeta.letter)} ${
+                    shockwaveActive ? 'scale-105 shadow-amber-400/80 ring-8 ring-amber-300/50' : 'hover:scale-[1.02]'
+                  }`}
+                >
+                  {/* Lente translúcido de cristal de alta fidelidad: deja ver el logo por debajo con nitidez y contrasta los resultados encima */}
+                  <div className="w-[84%] h-[84%] rounded-full bg-slate-950/60 backdrop-blur-md flex flex-col items-center justify-center border-2 border-white/50 shadow-2xl p-3 relative overflow-hidden">
+                    {/* Resplandor radial interno */}
+                    <div className="absolute inset-0 bg-radial from-amber-400/15 via-transparent to-transparent pointer-events-none" />
+
+                    {/* Letra Oficial BINGO (B, I, N, G, O) */}
+                    {currentBallMeta.letter && (
+                      <span className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-amber-300 leading-none mb-1 tracking-widest drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                        {currentBallMeta.letter}
+                      </span>
+                    )}
+
+                    {/* Número Principal Gigante */}
+                    <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-extrabold text-white leading-none tracking-tight drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)]">
+                      {currentBallNum}
+                    </span>
+
+                    {/* Subtítulo criollo o nombre de balota */}
+                    <div className="mt-2 flex items-center gap-1.5 max-w-[85%] text-center">
+                      <span className="text-xs sm:text-sm md:text-base font-display font-black text-amber-200 tracking-tight truncate drop-shadow-md">
+                        {currentBallMeta.subtext || currentBallMeta.displayLabel}
+                      </span>
+                      <button
+                        onClick={() => speakBallTTS(snapshot.modality_id, currentBallNum, true)}
+                        title="Repetir locución oficial"
+                        className="p-1 rounded-md bg-slate-900/80 hover:bg-slate-800 text-amber-300 border border-slate-700/80 cursor-pointer shrink-0 transition-colors"
+                      >
+                        <Volume2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Contador de extracción oficial */}
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-amber-400/90 mt-1">
+                      #{snapshot.drawn_numbers.length} / {snapshot.total_balls}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                /* ESTADO EN ESPERA (SORTEO PREPARADO): ARO Y ENMARCADO DEL MISMO TAMAÑO DEL LOGO */
+                <div className="absolute inset-0 rounded-full border-3 border-dashed border-amber-400/60 flex flex-col items-center justify-between p-6 sm:p-7 bg-slate-950/30 backdrop-blur-[2px] shadow-[0_0_50px_rgba(245,158,11,0.25)] animate-pulse z-10 pointer-events-none">
+                  {/* Badge Superior */}
+                  <div className="px-3.5 py-1 rounded-full bg-slate-950/85 border border-amber-500/40 text-amber-300 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest shadow-md flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                    <span>{snapshot.status === 'READY' ? 'Sorteo Preparado' : 'En Espera de Balota'}</span>
+                  </div>
+
+                  {/* Centro: Espacio libre para que el logo brille nítidamente */}
+                  <div className="my-auto pointer-events-none select-none text-center">
+                    <span className="text-[11px] font-mono tracking-widest text-amber-300/80 uppercase font-black drop-shadow-md">
+                      TÓMBOLA OFICIAL EN VIVO
+                    </span>
+                  </div>
+
+                  {/* Mensaje Inferior */}
+                  <div className="px-3 py-1.5 rounded-xl bg-slate-950/85 border border-slate-800 text-[10px] sm:text-[11px] text-slate-300 font-mono text-center max-w-[280px] leading-tight shadow-md">
+                    El servidor emitirá la siguiente balota al iniciar la extracción oficial.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* PANEL DERECHO: TABLERO DE CONTROL OFICIAL EN VERTICAL */}
+          <div className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col bg-slate-950/85 backdrop-blur-md rounded-2xl border border-slate-800/90 p-3 shadow-2xl order-3">
             {/* Cabecera del Tablero */}
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+              <div className="flex items-center gap-1.5">
                 <Grid3X3 className="h-4 w-4 text-amber-400" />
-                <span className="text-xs sm:text-sm font-display font-black text-white uppercase tracking-wider">
-                  Tablero de Control Oficial ({snapshot.modality_id})
+                <span className="text-xs font-display font-black text-white uppercase tracking-wider">
+                  Tablero Oficial ({snapshot.modality_id})
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
-                  {snapshot.drawn_numbers.length} / {snapshot.total_balls}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/25">
+                  {snapshot.drawn_numbers.length}/{snapshot.total_balls}
                 </span>
                 {/* Botón expandir en móvil */}
                 <button
                   onClick={() => setShowFullBoardMobile(!showFullBoardMobile)}
-                  className="sm:hidden p-1 text-slate-400 hover:text-white"
+                  className="lg:hidden p-1 text-slate-400 hover:text-white"
                   title="Colapsar / Expandir tablero"
                 >
                   {showFullBoardMobile ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -532,24 +616,24 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
               </div>
             </div>
 
-            {/* TABLERO BINGO_75 CON COLUMNAS B-I-N-G-O */}
+            {/* TABLERO VERTICAL BINGO_75 CON 5 COLUMNAS VERTICALES (B-I-N-G-O) */}
             {snapshot.modality_id === 'BINGO_75' && b75Columns ? (
-              <div className={`space-y-1.5 sm:space-y-2 ${showFullBoardMobile ? 'block' : 'hidden sm:block'}`}>
+              <div className={`grid grid-cols-5 gap-1 p-1 bg-slate-950/90 rounded-xl border border-slate-800/80 ${showFullBoardMobile ? 'grid' : 'hidden lg:grid'}`}>
                 {B75_LETTERS.map((letter) => {
                   const numbers = b75Columns[letter];
                   const colorConfig = B75_LETTER_COLORS[letter];
 
                   return (
-                    <div key={letter} className="flex items-center gap-1.5 sm:gap-2">
-                      {/* Letra de la columna con su color oficial */}
+                    <div key={letter} className="flex flex-col gap-1 items-center">
+                      {/* Cabecera vertical de la letra */}
                       <div
-                        className={`h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center font-display font-black text-xs sm:text-sm shrink-0 shadow-sm ${colorConfig.bg} ${colorConfig.text}`}
+                        className={`w-full py-0.5 rounded flex items-center justify-center font-display font-black text-xs shadow-xs ${colorConfig.bg} ${colorConfig.text}`}
                       >
                         {letter}
                       </div>
 
-                      {/* Números 1..15 correspondientes */}
-                      <div className="grid grid-cols-15 gap-1 flex-1">
+                      {/* 15 números apilados verticalmente */}
+                      <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
                         {numbers.map((num) => {
                           const isDrawn = drawnSet.has(num);
                           const isCurrent = num === currentBallNum;
@@ -557,12 +641,12 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
                           return (
                             <div
                               key={num}
-                              className={`h-7 sm:h-8 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] sm:text-xs transition-all ${
+                              className={`w-full h-5 sm:h-5.5 rounded flex items-center justify-center font-mono font-bold text-[9px] sm:text-[10px] transition-all ${
                                 isCurrent
-                                  ? 'bg-amber-300 text-slate-950 scale-110 z-10 shadow-lg shadow-amber-400/50 ring-2 ring-white font-black'
+                                  ? 'bg-amber-300 text-slate-950 scale-105 z-10 shadow-md shadow-amber-400/60 ring-1.5 ring-white font-black animate-pulse'
                                   : isDrawn
-                                  ? `${colorConfig.bg} ${colorConfig.text} shadow-xs font-black`
-                                  : 'bg-slate-950/70 text-slate-500 border border-slate-800/80 hover:border-slate-700'
+                                  ? `${colorConfig.bg} ${colorConfig.text} font-black shadow-2xs`
+                                  : 'bg-slate-900/90 text-slate-500 border border-slate-800/70 hover:border-slate-700'
                               }`}
                               title={`Balota ${letter}-${num}`}
                             >
@@ -576,10 +660,10 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
                 })}
               </div>
             ) : (
-              /* TABLERO BINGO_90 O MODALIDADES NUMÉRICAS */
+              /* TABLERO VERTICAL BINGO_90 O MODALIDADES NUMÉRICAS */
               <div
-                className={`grid grid-cols-10 sm:grid-cols-15 gap-1 sm:gap-1.5 max-h-60 overflow-y-auto pr-1 ${
-                  showFullBoardMobile ? 'block' : 'hidden sm:grid'
+                className={`grid grid-cols-5 sm:grid-cols-9 gap-1 max-h-[380px] overflow-y-auto p-1 bg-slate-950/90 rounded-xl border border-slate-800/80 ${
+                  showFullBoardMobile ? 'grid' : 'hidden lg:grid'
                 }`}
               >
                 {poolNumbers.map((num) => {
@@ -589,12 +673,12 @@ export const BingoClubLiveVisualizer: React.FC<BingoClubLiveVisualizerProps> = (
                   return (
                     <div
                       key={num}
-                      className={`h-7 sm:h-8 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] sm:text-xs transition-all ${
+                      className={`h-5.5 sm:h-6 rounded flex items-center justify-center font-mono font-bold text-[9px] sm:text-[10px] transition-all ${
                         isCurrent
-                          ? 'btn-gaming-gold text-slate-950 scale-110 z-10 shadow-lg ring-2 ring-amber-300 font-black'
+                          ? 'btn-gaming-gold text-slate-950 scale-105 z-10 shadow-md ring-1.5 ring-amber-300 font-black'
                           : isDrawn
-                          ? 'dauber-marked-gold text-slate-950 font-black shadow-xs'
-                          : 'bg-slate-950/70 text-slate-500 border border-slate-800/80'
+                          ? 'dauber-marked-gold text-slate-950 font-black shadow-2xs'
+                          : 'bg-slate-900/90 text-slate-500 border border-slate-800/70'
                       }`}
                       title={`Balota ${num}`}
                     >
